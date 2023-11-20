@@ -70,6 +70,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>.\eigen-3.4.0\Eigen\;.\eigen-3.4.0\unsupported\Eigen\CXX11\;$(IncludePath)</IncludePath>
+    <LibraryPath>.\eigen-3.4.0\Eigen;.\eigen-3.4.0\unsupported\Eigen\CXX11\;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -128,8 +132,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cheby1BSF.cpp" />
+    <ClCompile Include="Cheby1BSF.h" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="preprocess.cpp" />
+    <ClCompile Include="PreprocessEngine.cpp" />
+    <ClCompile Include="SSVEP.cpp" />
+    <ClCompile Include="utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PreprocessEngine.h" />
+    <ClInclude Include="SSVEP.h" />
+    <ClInclude Include="utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.ini" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
