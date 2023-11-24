@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /data
 /Eigen
+/data/S028.csv
+/data/S054.csv

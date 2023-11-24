@@ -27,10 +27,10 @@
     <ClCompile Include="SSVEP.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Cheby1BSF.cpp">
+    <ClCompile Include="Cheby1Filter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Cheby1BSF.h">
+    <ClCompile Include="Cheby1Filter.h">
       <Filter>头文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,9 +1,12 @@
 #include <iostream>
 #include <cmath>
-#include "Cheby1BSF.h"
+#include "Cheby1Filter.h"
 #define M_PI 3.1415926
 
-Cheby1BSF::Cheby1BSF(int order, int ripple, double wn1, double wn2, double srate) {
+Cheby1Filter::Cheby1Filter(){}
+
+// type: Lowpass, Highpass, bandPass, bandStop
+Cheby1Filter::Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type) {
     order_ = order;
     ripple_ = ripple;
     srate_ = srate;
@@ -13,15 +16,39 @@ Cheby1BSF::Cheby1BSF(int order, int ripple, double wn1, double wn2, double srate
     wo_ = sqrt(warped_[0] * warped_[1]);
 
     calculateZPK();
-    lp2bsZPK();
+    if (type == 's') {
+        lp2bsZPK();
+    }
+    else if (type == 'p') {
+        lp2bpZpk(); 
+    }
+    
     bilinearZPK();
     b_ = vecXcd2Tensor(k_ * poly(z_));
     a_ = vecXcd2Tensor(poly(p_));
 
+    if (a_(0) != 1.0) {
+        // Normalize the coefficients so a[0] == 1.
+        b_ = b_ / a_(0);
+        a_ = a_ / a_(0);
+    }
+
+    // Pad a or b with zeros so they are the same length.
+    int n = std::max(a_.size(), b_.size());
+    if (a_.size() < n) {
+        Eigen::Tensor<double, 1> zeros(n - a_.size());
+        Eigen::Tensor<double, 1> a_copy = a_.concatenate(zeros.setZero(), 0);
+        a_ = a_copy;
+    }
+    else if (b_.size() < n) {
+        Eigen::Tensor<double, 1> zeros(n - b_.size());
+        Eigen::Tensor<double, 1> b_copy = b_.concatenate(zeros.setZero(), 0);
+        b_ = b_copy;
+    }
     //std::cout << "a:\n" << a_ << "\n\nb:\n" << b_;
 }
 
-Eigen::Tensor<double, 1> Cheby1BSF::vecXcd2Tensor(Eigen::VectorXcd vector) {
+Eigen::Tensor<double, 1> Cheby1Filter::vecXcd2Tensor(Eigen::VectorXcd vector) {
     Eigen::Tensor<double, 1> tensor(vector.size());
     for (int i = 0; i < vector.size(); i++){
         tensor(i) = vector[i].real();
@@ -29,8 +56,7 @@ Eigen::Tensor<double, 1> Cheby1BSF::vecXcd2Tensor(Eigen::VectorXcd vector) {
     return tensor;
 }
 
-
-void Cheby1BSF::calculateZPK() {
+void Cheby1Filter::calculateZPK() {
     int N = order_;
     double rp = ripple_;
     if (abs(int(N)) != N) {
@@ -62,7 +88,31 @@ void Cheby1BSF::calculateZPK() {
     z_ = Eigen::VectorXd::Zero(0);
 }
 
-void Cheby1BSF::lp2bsZPK() {
+void Cheby1Filter::lp2bpZpk() {
+    int degree = p_.size() - z_.size();
+    Eigen::VectorXcd z_lp = bw_ / 2.0 * z_.array();
+    Eigen::VectorXcd p_lp = bw_ / 2.0 * p_.array();
+    Eigen::VectorXcd z_bp = Eigen::VectorXcd::Zero(2 * z_lp.size() + degree);
+    Eigen::VectorXcd p_bp = Eigen::VectorXcd::Zero(2 * p_lp.size());
+    for (int i = 0; i < z_.size(); i++) {
+        std::complex<double> sqrt_term = std::sqrt(std::pow(z_lp(i), 2) - std::pow(wo_, 2));
+        z_bp(i) = z_lp(i) + sqrt_term;
+        z_bp(z_.size() + i) = z_lp(i) - sqrt_term;
+    }
+    for (int i = 0; i < p_.size(); i++) {
+        std::complex<double> sqrt_term = std::sqrt(std::pow(p_lp(i), 2) - std::pow(wo_, 2));
+        p_bp(i) = p_lp(i) + sqrt_term;
+        p_bp(p_.size() + i) = p_lp(i) - sqrt_term;
+    }
+    for (int i = 0; i < degree; i++) {
+        z_bp(z_bp.size() - degree + i) = 0;
+    }
+    k_ = k_ * std::pow(bw_, degree);
+    z_ = z_bp;
+    p_ = p_bp;
+}
+
+void Cheby1Filter::lp2bsZPK() {
     int degree = p_.size() - z_.size();
     Eigen::VectorXcd z_hp = bw_ / 2.0 / z_.array();
     Eigen::VectorXcd p_hp = bw_ / 2.0 / p_.array();
@@ -89,7 +139,7 @@ void Cheby1BSF::lp2bsZPK() {
     p_ = p_bs;
 }
 
-void Cheby1BSF::bilinearZPK() {
+void Cheby1Filter::bilinearZPK() {
     int degree = p_.size() - z_.size();
 
     double fs2 = 4.0;
@@ -109,7 +159,7 @@ void Cheby1BSF::bilinearZPK() {
     p_ = p_z;
 }
 
-Eigen::VectorXcd Cheby1BSF::poly(Eigen::VectorXcd x) {
+Eigen::VectorXcd Cheby1Filter::poly(const Eigen::VectorXcd& x) {
     Eigen::VectorXcd a = Eigen::VectorXcd::Ones(x.size() + 1);
     Eigen::VectorXcd b = Eigen::VectorXcd::Ones(2);
     for (int i = 0; i < x.size(); i++) {
@@ -121,7 +171,7 @@ Eigen::VectorXcd Cheby1BSF::poly(Eigen::VectorXcd x) {
     return a.real();
 }
 
-Eigen::VectorXcd Cheby1BSF::convolve(Eigen::VectorXcd x, Eigen::VectorXcd y, int loc) {
+Eigen::VectorXcd Cheby1Filter::convolve(const Eigen::VectorXcd& x, const Eigen::VectorXcd& y, int loc) {
     int n = loc + y.size() - 1;
     Eigen::VectorXcd out(n);
     for (int i = 0; i < n; i++) {

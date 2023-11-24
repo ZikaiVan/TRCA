@@ -4,19 +4,20 @@
 #include <Tensor>
 #define M_PI 3.1415926
 
-class Cheby1BSF {
+class Cheby1Filter {
 public:
-    Cheby1BSF(int order, int ripple, double wn1, double wn2, double srate);
-
+    Cheby1Filter();
+    Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type);
     Eigen::Tensor<double, 1> b_;
     Eigen::Tensor<double, 1> a_;
 
 private:
     void calculateZPK();
+    void lp2bpZpk();
     void lp2bsZPK();
     void bilinearZPK();
-    Eigen::VectorXcd poly(Eigen::VectorXcd x);
-    Eigen::VectorXcd convolve(Eigen::VectorXcd x, Eigen::VectorXcd y, int loc);
+    Eigen::VectorXcd poly(const Eigen::VectorXcd& x);
+    Eigen::VectorXcd convolve(const Eigen::VectorXcd& x, const Eigen::VectorXcd& y, int loc);
     Eigen::Tensor<double, 1> vecXcd2Tensor(Eigen::VectorXcd vector);
 
     int order_;

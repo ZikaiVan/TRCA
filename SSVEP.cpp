@@ -59,6 +59,53 @@ Eigen::Tensor<double, 2> SSVEP::getSingleTrial(int block, int stimulus, int star
     return slice_data;
 }
 
+Eigen::Tensor<double, 2> SSVEP::tensor1to2(const Eigen::Tensor<double, 1>& tensor1) {
+    Eigen::Tensor<double, 2> tensor2(1, tensor1.dimension(0));
+    for (int i = 0; i < tensor1.dimension(0); i++) {
+        tensor2(0, i) = tensor1(i);
+    }
+    return tensor2;
+}
+
+Eigen::Tensor<double, 2> SSVEP::transpose(const Eigen::Tensor<double, 2>& tensor) {
+    Eigen::array<int, 2> shuffleOrder({ 1, 0 });
+    return tensor.shuffle(shuffleOrder);
+}
+
+Eigen::Tensor<double, 2> SSVEP::rowCompanion(const Eigen::Tensor<double, 2>& input) {
+    int n = input.dimension(1);
+    Eigen::Tensor<double, 2> tensor(n - 1, n - 1);
+    tensor.setZero();
+    for (int i = 0; i < n - 2; i++) {
+        tensor(i + 1, i) = 1.0;
+    }
+    for (int i = 0; i < n-1; i++) {
+        tensor(0, i) = -input(0, i+1) / input(0, 0);
+    }
+    return tensor;
+}
+
+Eigen::Tensor<double, 2> SSVEP::identity(int n) {
+    Eigen::Tensor<double, 2> I(n, n);
+    I.setZero();
+    for (int i = 0; i < n; i++) {
+        I(i, i) = 1.0;
+    }
+    return I;
+}
+
+Eigen::Tensor<double, 2> SSVEP::solve(const Eigen::Tensor<double, 2>& A, const Eigen::Tensor<double, 2>& B) {
+    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> A_(A.data(), A.dimension(0), A.dimension(1));
+    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> B_(B.data(), B.dimension(0), B.dimension(1));
+    Eigen::VectorXd zi = A_.fullPivLu().solve(B_);
+
+    Eigen::Tensor<double, 2> tensor(1, zi.size());
+    for (int i = 0; i < zi.size(); i++) {
+        tensor(0, i) = zi(i);
+    }
+    return tensor;
+}
+
 // private
 void SSVEP::loadConfig(const std::string& path)
 {
@@ -88,6 +135,10 @@ void SSVEP::loadConfig(const std::string& path)
         else if (line.find("rest") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->rest_ = std::stod(value);
+        }
+        else if (line.find("subbands") != std::string::npos) {
+            std::string value = line.substr(line.find("=") + 1);
+            this->subbands_ = std::stoi(value);
         }
         else if (line.find("electrodes") != std::string::npos) {
 			std::string value = line.substr(line.find("=") + 1);

@@ -108,6 +108,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,8 +133,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Cheby1BSF.cpp" />
-    <ClCompile Include="Cheby1BSF.h" />
+    <ClCompile Include="Cheby1Filter.cpp" />
+    <ClCompile Include="Cheby1Filter.h" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PreprocessEngine.cpp" />
     <ClCompile Include="SSVEP.cpp" />
