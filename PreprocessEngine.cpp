@@ -11,9 +11,8 @@ PreprocessEngine::PreprocessEngine(SSVEP* data) {
 	// 写死参数，可以改为config.ini配置.
 	// Lowpass, Highpass, bandPass, bandStop
 	bsf = new Cheby1Filter(4, 2, 47, 53, s_rate, 's');
-	bpf = new Cheby1Filter[5];
-	for (int i = 0; i < 5; i++) {
-//@zikai 23.11.24 检查计算的参数，有点问题
+	bpf = new Cheby1Filter[data->subbands_];
+	for (int i = 0; i < data->subbands_; i++) {
 		bpf[i] = Cheby1Filter(4, 1, 9*(i+1), 90, s_rate, 'p');
 	}
 }
@@ -23,11 +22,16 @@ Eigen::Tensor<double, 2> PreprocessEngine::notch(const Eigen::Tensor<double, 2>&
 }
 
 Eigen::Tensor<double, 3> PreprocessEngine::filterBank(const Eigen::Tensor<double, 2>& trial) {
-	Eigen::Tensor<double, 3> trial_sets(5, trial.dimension(0), trial.dimension(1));
-	trial_sets.setZero();
-	for (int i = 0; i < 5; i++) {
-		trial_sets.chip<0>(i)=filtFilt(trial, bpf[i], 1);
+	int subbands = data->subbands_;
+	Eigen::array<Eigen::DenseIndex, 3> offsets = { 0, 0, data->latency_ };
+	Eigen::array<Eigen::DenseIndex, 3> extents = { subbands, data->electrodes_, data->duration_ };
+	Eigen::Tensor<double, 3> trial_tmp(subbands, trial.dimension(0), trial.dimension(1));
+	Eigen::Tensor<double, 3> trial_sets(subbands, trial.dimension(0), data->duration_);
+	for (int i = 0; i < subbands; i++) {
+		trial_tmp.chip<0>(i)=filtFilt(trial, bpf[i], 1);
 	}
+	trial_sets = trial_tmp.slice(offsets, extents);
+	tensor3dToCsv(trial_sets);
 	return trial_sets;
 }
 

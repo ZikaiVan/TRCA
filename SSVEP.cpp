@@ -51,12 +51,12 @@ void SSVEP::loadCsv(const std::string& path)
     this->data = data;
 }
 
-Eigen::Tensor<double, 2> SSVEP::getSingleTrial(int block, int stimulus, int start, int end) {
-    Eigen::array<Eigen::DenseIndex, 2> offsets = { 0, start};
-    Eigen::array<Eigen::DenseIndex, 2> extents = { electrodes_, end-start};
-    Eigen::Tensor<double, 2> slice_data = this->data.chip(block, 0).chip(stimulus, 0).slice(offsets, extents);
+Eigen::Tensor<double, 2> SSVEP::getSingleTrial(int block, int stimulus) {
+    Eigen::array<Eigen::DenseIndex, 2> offsets = {0, pre_stim_};
+    Eigen::array<Eigen::DenseIndex, 2> extents = {electrodes_, latency_+duration_};
+    Eigen::Tensor<double, 2> single_trial = data.chip(block, 0).chip(stimulus, 0).slice(offsets, extents);
     //std::cout << std::endl<<slice_data.dimensions() << std::endl;
-    return slice_data;
+    return single_trial;
 }
 
 Eigen::Tensor<double, 2> SSVEP::tensor1to2(const Eigen::Tensor<double, 1>& tensor1) {
@@ -114,31 +114,34 @@ void SSVEP::loadConfig(const std::string& path)
         throw std::runtime_error("Could not open file");
     }
     std::string line;
-    while (std::getline(in, line))
-    {
+    while (std::getline(in, line)) {
         if (line.find("s_rate") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->s_rate_ = std::stoi(value);
+            break;
         }
-        else if (line.find("latency") != std::string::npos) {
+    }
+    while (std::getline(in, line)) {
+        if (line.find("latency") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
-            this->latency_ = std::stod(value);
+            this->latency_ = std::stod(value) *this->s_rate_;
         }
         else if (line.find("duration") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
-            this->duration_ = std::stod(value);
+            this->duration_ = std::stod(value) * this->s_rate_;
         }
         else if (line.find("pre_stim") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
-            this->pre_stim_ = std::stod(value);
+            this->pre_stim_ = std::stod(value) * this->s_rate_;
         }
         else if (line.find("rest") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
-            this->rest_ = std::stod(value);
+            this->rest_ = std::stod(value) * this->s_rate_;
         }
         else if (line.find("subbands") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
-            this->subbands_ = std::stoi(value);
+            this->subbands_ = std::stoi(value) > 9 ? 9 : std::stoi(value);
+            this->subbands_ = std::stoi(value) < 1 ? 1 : std::stoi(value);
         }
         else if (line.find("electrodes") != std::string::npos) {
 			std::string value = line.substr(line.find("=") + 1);
@@ -157,5 +160,5 @@ void SSVEP::loadConfig(const std::string& path)
 			this->sets_ = std::stoi(value);
 		}
     }
-    samples_ = (latency_ + duration_ + pre_stim_ + rest_) * s_rate_;
+    samples_ = latency_ + duration_ + pre_stim_ + rest_;
 }

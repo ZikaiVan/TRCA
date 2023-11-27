@@ -138,11 +138,13 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PreprocessEngine.cpp" />
     <ClCompile Include="SSVEP.cpp" />
+    <ClCompile Include="TRCA.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PreprocessEngine.h" />
     <ClInclude Include="SSVEP.h" />
+    <ClInclude Include="TRCA.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
