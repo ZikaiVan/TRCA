@@ -19,7 +19,6 @@ int main() {
 	for (int block = 0; block < train_len; block++) {
 		for (int stimulus = 0; stimulus < data->stimulus_; stimulus++) {
 			Eigen::Tensor<double, 2> trial = data->getSingleTrial(train_blocks[block], stimulus);
-			// @zikai 11.27 可以改成一次解决所有维度
 			trial = pe->notch(trial);
 			train4d.chip<0>(block * data->stimulus_ + stimulus) = pe->filterBank(trial);
 		}
