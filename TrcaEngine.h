@@ -13,7 +13,6 @@ public:
 	Eigen::Tensor<double, 1> predict(const Eigen::Tensor<double, 4>& trials, const Eigen::Tensor<double, 4>& templates,
 		const Eigen::Tensor<double, 4>& U, const Eigen::Tensor<double, 4>& V) const;
 
-
 private:
 	Eigen::Tensor<double, 4> U_trca_;
 	Eigen::Tensor<double, 1> filter_banks_weights_;
