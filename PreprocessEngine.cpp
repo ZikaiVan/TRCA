@@ -5,33 +5,32 @@
 
 PreprocessEngine::~PreprocessEngine() {}
 
-PreprocessEngine::PreprocessEngine(SSVEP* data) {
-	s_rate = data->s_rate_;
-	this->data = data;
+PreprocessEngine::PreprocessEngine(const SSVEP* data) {
+	s_rate_ = data->s_rate_;
+	this->data_ = data;
 	// 写死参数，可以改为config.ini配置.
 	// Lowpass, Highpass, bandPass, bandStop
-	bsf = new Cheby1Filter(4, 2, 47, 53, s_rate, 's');
-	bpf = new Cheby1Filter[data->subbands_];
+	bsf_ = new Cheby1Filter(4, 2, 47, 53, s_rate_, 's');
+	bpf_ = new Cheby1Filter[data->subbands_];
 	for (int i = 0; i < data->subbands_; i++) {
-		bpf[i] = Cheby1Filter(4, 1, 9*(i+1), 90, s_rate, 'p');
+		bpf_[i] = Cheby1Filter(4, 1, 9*(i+1), 90, s_rate_, 'p');
 	}
 }
 
 Eigen::Tensor<double, 2> PreprocessEngine::notch(const Eigen::Tensor<double, 2>& trial) {
-	return filtFilt(trial, *bsf, 1);
+	return filtFilt(trial, *bsf_, 1);
 }
 
 Eigen::Tensor<double, 3> PreprocessEngine::filterBank(const Eigen::Tensor<double, 2>& trial) {
-	int subbands = data->subbands_;
-	Eigen::array<Eigen::DenseIndex, 3> offsets = { 0, 0, data->latency_ };
-	Eigen::array<Eigen::DenseIndex, 3> extents = { subbands, data->electrodes_, data->duration_ };
-	Eigen::Tensor<double, 3> trial_tmp(subbands, trial.dimension(0), trial.dimension(1));
-	Eigen::Tensor<double, 3> trial_sets(subbands, trial.dimension(0), data->duration_);
-	for (int i = 0; i < subbands; i++) {
-		trial_tmp.chip<0>(i)=filtFilt(trial, bpf[i], 1);
+	Eigen::array<Eigen::DenseIndex, 3> offsets = { 0, 0, data_->latency_ };
+	Eigen::array<Eigen::DenseIndex, 3> extents = { data_->subbands_, data_->electrodes_, data_->duration_ };
+	Eigen::Tensor<double, 3> trial_tmp(data_->subbands_, trial.dimension(0), trial.dimension(1));
+	Eigen::Tensor<double, 3> trial_sets(data_->subbands_, trial.dimension(0), data_->duration_);
+	for (int i = 0; i < data_->subbands_; i++) {
+		trial_tmp.chip<0>(i)=filtFilt(trial, bpf_[i], 1);
 	}
 	trial_sets = trial_tmp.slice(offsets, extents);
-	tensor3dToCsv(trial_sets);
+	//tensor3dToCsv(trial_sets);
 	return trial_sets;
 }
 
@@ -103,20 +102,20 @@ Eigen::Tensor<double, 2> PreprocessEngine::lFilterZi(const Cheby1Filter& filter)
 	}
 
 	int n = std::max(a_copy.size(), b_copy.size());
-	Eigen::Tensor<double, 2> a_copy2D = data->tensor1to2(a_copy);
-	Eigen::Tensor<double, 2> I = data->identity(n - 1);
-	Eigen::Tensor<double, 2> A = data->transpose(data->rowCompanion(a_copy2D));
+	Eigen::Tensor<double, 2> a_copy2D = data_->tensor1to2(a_copy);
+	Eigen::Tensor<double, 2> I = data_->identity(n - 1);
+	Eigen::Tensor<double, 2> A = data_->transpose(data_->rowCompanion(a_copy2D));
 	Eigen::Tensor<double, 2> IminusA = I - A;
 
-	Eigen::Tensor<double, 2> b_copy2D_T = data->transpose(data->tensor1to2(b_copy));
-	Eigen::Tensor<double, 2> a_copy2D_T = data->transpose(data->tensor1to2(a_copy));
+	Eigen::Tensor<double, 2> b_copy2D_T = data_->transpose(data_->tensor1to2(b_copy));
+	Eigen::Tensor<double, 2> a_copy2D_T = data_->transpose(data_->tensor1to2(a_copy));
 	Eigen::array<Eigen::Index, 2> start_indices = { 1,0 };
 	Eigen::array<Eigen::Index, 2> offset_indices = { b_copy2D_T.dimension(0) - 1, 1 };
 	Eigen::Tensor<double, 2> B = b_copy2D_T.slice(start_indices, offset_indices)
 		- a_copy2D_T.slice(start_indices, offset_indices) * b_copy2D_T(0, 0);
 
 	//Solve A*zi = B
-	Eigen::Tensor<double, 2> zi = data->solve(IminusA, B);
+	Eigen::Tensor<double, 2> zi = data_->solveZi(IminusA, B);
 	//std::cout << zi;
 	return zi;
 }

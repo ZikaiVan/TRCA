@@ -33,7 +33,7 @@
     <ClCompile Include="Cheby1Filter.h">
       <Filter>头文件</Filter>
     </ClCompile>
-    <ClCompile Include="TRCA.cpp">
+    <ClCompile Include="TrcaEngine.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,7 +47,7 @@
     <ClInclude Include="SSVEP.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TRCA.h">
+    <ClInclude Include="TrcaEngine.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

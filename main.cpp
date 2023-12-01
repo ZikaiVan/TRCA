@@ -1,31 +1,61 @@
 #include "PreprocessEngine.h"
+#include "TrcaEngine.h"
 #include <iostream>
-#include <time.h>
-clock_t start;
+#include <chrono>
+#include <windows.h>
+#include <psapi.h>
 
 int main() {
 	int subject = 28;
-	int train_blocks[7] = { 0,1,2,3,4,5,6 };
-	int test_blocks[3] = { 7,8,9 };
-	int train_len = sizeof(train_blocks) / sizeof(train_blocks[0]);
-	int test_len = sizeof(test_blocks) / sizeof(test_blocks[0]);
 	SSVEP* data = new SSVEP();
 	PreprocessEngine* pe;
+	TrcaEngine* te;
 	data->loadCsv("./data/S028.csv");
 	pe = new PreprocessEngine(data);
+	te = new TrcaEngine(data);
 
-	Eigen::Tensor<double, 4> train4d(train_len * data->stimulus_, data->subbands_, data->electrodes_, data->duration_);
-	start = clock();
-	for (int block = 0; block < train_len; block++) {
+	auto start = std::chrono::high_resolution_clock::now();
+	for (int block = 0; block < data->train_len_; block++) {
 		for (int stimulus = 0; stimulus < data->stimulus_; stimulus++) {
-			Eigen::Tensor<double, 2> trial = data->getSingleTrial(train_blocks[block], stimulus);
-			trial = pe->notch(trial);
-			train4d.chip<0>(block * data->stimulus_ + stimulus) = pe->filterBank(trial);
+			Eigen::Tensor<double, 2> single_trial = data->getSingleTrial(block, stimulus);
+			single_trial = pe->notch(single_trial);
+			data->train_trials_.chip<0>(block * data->stimulus_ + stimulus) = pe->filterBank(single_trial);
 		}
 	}
-	std::cout << (clock() - start) / CLOCKS_PER_SEC;
+	auto end = std::chrono::high_resolution_clock::now();
+	std::cout << "Train preprocess elapsed time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms\n";
 
+	start = std::chrono::high_resolution_clock::now();
+	data->calculateTemplates();
+	te->fit();
+	end = std::chrono::high_resolution_clock::now();
+	std::cout << "Fit elapsed time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms\n";
+
+	start = std::chrono::high_resolution_clock::now();
+	for (int block = data->train_len_; block < data->blocks_; block++) {
+		for (int stimulus = 0; stimulus < data->stimulus_; stimulus++) {
+			Eigen::Tensor<double, 2> single_trial = data->getSingleTrial(block, stimulus);
+			single_trial = pe->notch(single_trial);
+			data->test_trials_.chip<0>((block-data->train_len_) * data->stimulus_ + stimulus) = pe->filterBank(single_trial);
+		}
+	}
+	end = std::chrono::high_resolution_clock::now();
+	std::cout << "Test preprocess elapsed time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms\n";
+
+	start = std::chrono::high_resolution_clock::now();
+	Eigen::Tensor<double, 1> pre_labels = te->predict();
+	end = std::chrono::high_resolution_clock::now();
+	std::cout << "Predict elapsed time: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms\n";
+
+	double acc = 0, itr = 0;
+	for (int i = 0; i < pre_labels.dimension(0); i++) {
+		if (pre_labels(i) == data->test_labels_(i)) {
+			acc = acc + double(1) / pre_labels.dimension(0);
+		}
+	}
+	std::cout << "acc: " << acc*100 << "%\n";
 
 	return 0;
 }
+
 

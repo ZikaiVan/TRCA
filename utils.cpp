@@ -1,5 +1,18 @@
 #include "utils.h"
 
+void tensor1dToCsv(const Eigen::Tensor<double, 1>& tensor, const std::string& path) {
+    std::ofstream file(path, std::ios::out);
+    file.setf(std::ios::fixed, std::ios::floatfield);
+    file.precision(12);
+
+    for (int i = 0; i < tensor.dimension(0); i++) {
+        file << tensor(i);
+        file << ",";
+    }
+
+    file.close();
+}
+
 // flag: 0(default, ios:out) or 1(append, ios::app)
 void tensor2dToCsv(const Eigen::Tensor<double, 2>& tensor, int flag, const std::string& path) {
     std::ofstream file(path, std::ios::app);

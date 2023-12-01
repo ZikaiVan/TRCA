@@ -6,20 +6,12 @@
 
 class Cheby1Filter {
 public:
-    Cheby1Filter();
-    Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type);
     Eigen::Tensor<double, 1> b_;
     Eigen::Tensor<double, 1> a_;
+    Cheby1Filter();
+    Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type);
 
 private:
-    void calculateZPK();
-    void lp2bpZpk();
-    void lp2bsZPK();
-    void bilinearZPK();
-    Eigen::VectorXcd poly(const Eigen::VectorXcd& x);
-    Eigen::VectorXcd convolve(const Eigen::VectorXcd& x, const Eigen::VectorXcd& y, int loc);
-    Eigen::Tensor<double, 1> vecXcd2Tensor(Eigen::VectorXcd vector);
-
     int order_;
     double ripple_;
     double warped_[2];
@@ -29,4 +21,12 @@ private:
     Eigen::VectorXcd z_;
     Eigen::VectorXcd p_;
     double k_;
+
+    void calculateZPK();
+    void lp2bpZpk();
+    void lp2bsZPK();
+    void bilinearZPK();
+    Eigen::VectorXcd poly(const Eigen::VectorXcd& x);
+    Eigen::VectorXcd convolve(const Eigen::VectorXcd& x, const Eigen::VectorXcd& y, int loc);
+    Eigen::Tensor<double, 1> vecXcd2Tensor(Eigen::VectorXcd vector);
 };
