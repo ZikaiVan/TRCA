@@ -46,7 +46,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="Cheby1Filter.cpp" />
     <ClCompile Include="Cheby1Filter.h" />
+    <ClCompile Include="dll.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PreprocessEngine.cpp" />
     <ClCompile Include="SSVEP.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dll.h" />
     <ClInclude Include="PreprocessEngine.h" />
     <ClInclude Include="SSVEP.h" />
     <ClInclude Include="TrcaEngine.h" />

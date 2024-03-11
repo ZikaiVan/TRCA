@@ -2,15 +2,26 @@
 #include "TrcaEngine.h"
 #include <iostream>
 #include <chrono>
-#include <windows.h>
-#include <psapi.h>
+#include <string>
+
+void trcaTest(int subject, std::string path);
 
 int main() {
-	int subject = 28;
+	//@zikai 23.12.2 内存释放问题
+	getchar();
+	for (int subject = 20; subject < 30; subject++) {
+		std::cout << "S0" << subject << std::endl;
+		std::string path="./data/S0"+std::to_string(subject)+".csv";
+		trcaTest(subject, path);
+	}
+	return 0;
+}
+
+void trcaTest(int subject, std::string path) {
 	SSVEP* data = new SSVEP();
 	PreprocessEngine* pe;
 	TrcaEngine* te;
-	data->loadCsv("./data/S028.csv");
+	data->loadCsv(path);
 	pe = new PreprocessEngine(data);
 	te = new TrcaEngine(data);
 
@@ -55,7 +66,7 @@ int main() {
 	}
 	std::cout << "acc: " << acc*100 << "%\n";
 
-	return 0;
+	//return 0;
 }
 
 
