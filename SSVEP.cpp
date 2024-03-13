@@ -7,6 +7,7 @@
 // public
 SSVEP::SSVEP(const std::string& path) {
     loadConfig(path);
+
     Eigen::Tensor<int, 1> train_labels(stimulus_ * train_len_);
     Eigen::Tensor<double, 4> train_trials(train_len_ * stimulus_, subbands_, electrodes_, duration_);
     for (int block = 0; block < train_len_; block++) {
@@ -19,13 +20,13 @@ SSVEP::SSVEP(const std::string& path) {
 
     Eigen::Tensor<int, 1> test_labels(stimulus_ * test_len_);
     Eigen::Tensor<double, 4> test_trials(test_len_ * stimulus_, subbands_, electrodes_, duration_);
-    for (int block = train_len_; block < blocks_; block++){
+    for (int block = 0; block < test_len_; block++){
         for (int stimulus = 0; stimulus < stimulus_; stimulus++) {
-            test_labels((block-train_len_) * stimulus_ + stimulus) = stimulus;
+            test_labels(block * stimulus_ + stimulus) = stimulus;
         }
     }
-    test_labels_ = test_labels;
     test_trials_ = test_trials;
+    test_labels_ = test_labels;
 }
 
 void SSVEP::loadMat(const std::string& path){}
@@ -86,8 +87,8 @@ void SSVEP::calculateTemplates() {
 }
 
 Eigen::Tensor<double, 2> SSVEP::getSingleTrial(int block, int stimulus) const {
-    Eigen::array<Eigen::DenseIndex, 2> offsets = {0, pre_stim_};
-    Eigen::array<Eigen::DenseIndex, 2> extents = {electrodes_, latency_+duration_};
+    Eigen::array<Eigen::DenseIndex, 2> offsets = {0, 0};
+    Eigen::array<Eigen::DenseIndex, 2> extents = {electrodes_, duration_};
     Eigen::Tensor<double, 2> single_trial = data_.chip(block, 0).chip(stimulus, 0).slice(offsets, extents);
     //std::cout << std::endl<<slice_data.dimensions() << std::endl;
     return single_trial;
@@ -95,9 +96,7 @@ Eigen::Tensor<double, 2> SSVEP::getSingleTrial(int block, int stimulus) const {
 
 Eigen::Tensor<double, 2> SSVEP::tensor1to2(const Eigen::Tensor<double, 1>& tensor) const {
     Eigen::Tensor<double, 2> tensor1(1, tensor.dimension(0));
-    for (int i = 0; i < tensor.dimension(0); i++) {
-        tensor1(0, i) = tensor(i);
-    }
+    tensor1.chip<0>(0) = tensor;
     return tensor1;
 }
 
@@ -181,59 +180,38 @@ void SSVEP::loadConfig(const std::string& path)
     }
     std::string line;
     while (std::getline(in, line)) {
-        if (line.find("s_rate") != std::string::npos) {
+        if (line.find("SSVEP_srate") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->s_rate_ = std::stoi(value);
             break;
         }
     }
     while (std::getline(in, line)) {
-        if (line.find("train_blocks") != std::string::npos) {
+        if (line.find("SSVEP_train_times") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->train_len_ = std::stod(value);
         }
-        else if (line.find("latency") != std::string::npos) {
+        else if (line.find("SSVEP_test_times") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
-            this->latency_ = std::stod(value) *this->s_rate_;
+            this->test_len_ = std::stod(value);
         }
-        else if (line.find("duration") != std::string::npos) {
+        else if (line.find("SSVEP_duration") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->duration_ = std::stod(value) * this->s_rate_;
+            this->samples_ = this->duration_;
         }
-        else if (line.find("pre_stim") != std::string::npos) {
-            std::string value = line.substr(line.find("=") + 1);
-            this->pre_stim_ = std::stod(value) * this->s_rate_;
-        }
-        else if (line.find("rest") != std::string::npos) {
-            std::string value = line.substr(line.find("=") + 1);
-            this->rest_ = std::stod(value) * this->s_rate_;
-        }
-        else if (line.find("subbands") != std::string::npos) {
+        else if (line.find("SSVEP_subbands") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->subbands_ = std::stoi(value) > 9 ? 9 : std::stoi(value);
             this->subbands_ = std::stoi(value) < 1 ? 1 : std::stoi(value);
         }
-        else if (line.find("type") != std::string::npos) {
-            std::string value = line.substr(line.find("=") + 1);
-            this->type_ = std::stoi(value);
-        }
-        else if (line.find("electrodes") != std::string::npos) {
+        else if (line.find("SSVEP_electrodes") != std::string::npos) {
 			std::string value = line.substr(line.find("=") + 1);
 			this->electrodes_ = std::stoi(value);
 		}
-        else if (line.find("stimulus") != std::string::npos) {
-			std::string value = line.substr(line.find("=") + 1);
-			this->stimulus_ = std::stoi(value);
-		}
-        else if (line.find("blocks") != std::string::npos) {
-			std::string value = line.substr(line.find("=") + 1);
-			this->blocks_ = std::stoi(value);
-		}
-        else if (line.find("sets") != std::string::npos) {
-			std::string value = line.substr(line.find("=") + 1);
-			this->sets_ = std::stoi(value);
-		}
+        else if (line.find("SSVEP_string") != std::string::npos) {
+            std::string value = line.substr(line.find("=") + 2);
+            this->stimulus_ = value.length();
+        }
     }
-    test_len_ = blocks_ - train_len_;
-    samples_ = latency_ + duration_ + pre_stim_ + rest_;
 }

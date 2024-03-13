@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSVEP_H
+#define SSVEP_H
 #include <string>
 #include <Dense>
 #include <Core>
@@ -50,3 +51,4 @@ public:
 private:
 	void loadConfig(const std::string& path = "./config.ini");
 };
+#endif SSVEP_H

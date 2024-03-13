@@ -25,6 +25,7 @@ void trcaTest(int subject, std::string path) {
 	pe = new PreprocessEngine(data);
 	te = new TrcaEngine(data);
 
+	//@zikai 4维：(训练次数，目标数，电极通道数，单通道数据)
 	auto start = std::chrono::high_resolution_clock::now();
 	for (int block = 0; block < data->train_len_; block++) {
 		for (int stimulus = 0; stimulus < data->stimulus_; stimulus++) {

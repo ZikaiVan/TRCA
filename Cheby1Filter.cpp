@@ -56,7 +56,6 @@ Eigen::Tensor<double, 1> Cheby1Filter::vecXcd2Tensor(Eigen::VectorXcd vector) {
     return tensor;
 }
 
-
 void Cheby1Filter::calculateZPK() {
     int N = order_;
     double rp = ripple_;

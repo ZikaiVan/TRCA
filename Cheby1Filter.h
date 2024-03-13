@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CHEBY1FILTER_H
+#define CHEBY1FILTER_H
 #include <Dense>
 #include <Core>
 #include <Tensor>
@@ -30,3 +31,4 @@ private:
     Eigen::VectorXcd convolve(const Eigen::VectorXcd& x, const Eigen::VectorXcd& y, int loc);
     Eigen::Tensor<double, 1> vecXcd2Tensor(Eigen::VectorXcd vector);
 };
+#endif // CHEBY1FILTER_H

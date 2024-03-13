@@ -1,33 +1,44 @@
 #include "PreprocessEngine.h"
+#include "utils.h"
 #include <cmath>
 #include <iostream>
 #define M_PI 3.1415926
 
-PreprocessEngine::~PreprocessEngine() {}
+PreprocessEngine::~PreprocessEngine() {
+}
 
 PreprocessEngine::PreprocessEngine(const SSVEP* data) {
 	s_rate_ = data->s_rate_;
 	this->data_ = data;
 	// 写死参数，可以改为config.ini配置.
 	// Lowpass, Highpass, bandPass, bandStop
-	bsf_ = new Cheby1Filter(4, 2, 47, 53, s_rate_, 's');
-	bpf_ = new Cheby1Filter[data->subbands_];
+	bsf_ = std::make_unique<Cheby1Filter>(4, 2, 47, 53, s_rate_, 's');
+	bpf_ = std::make_unique<Cheby1Filter[]>(data->subbands_);
+
 	for (int i = 0; i < data->subbands_; i++) {
 		bpf_[i] = Cheby1Filter(4, 1, 9*(i+1), 90, s_rate_, 'p');
 	}
 }
 
 Eigen::Tensor<double, 2> PreprocessEngine::notch(const Eigen::Tensor<double, 2>& trial) {
-	return filtFilt(trial, *bsf_, 1);
+	return filtFilt(trial, *bsf_.get(), 1);
 }
 
 Eigen::Tensor<double, 3> PreprocessEngine::filterBank(const Eigen::Tensor<double, 2>& trial) {
-	Eigen::array<Eigen::DenseIndex, 3> offsets = { 0, 0, data_->latency_ };
+	Eigen::array<Eigen::DenseIndex, 3> offsets = { 0, 0, 0 };
 	Eigen::array<Eigen::DenseIndex, 3> extents = { data_->subbands_, data_->electrodes_, data_->duration_ };
 	Eigen::Tensor<double, 3> trial_tmp(data_->subbands_, trial.dimension(0), trial.dimension(1));
 	Eigen::Tensor<double, 3> trial_sets(data_->subbands_, trial.dimension(0), data_->duration_);
+	Eigen::Tensor<double, 2> tmp, std;
+
 	for (int i = 0; i < data_->subbands_; i++) {
-		trial_tmp.chip<0>(i)=filtFilt(trial, bpf_[i], 1);
+		tmp = filtFilt(trial, bpf_.get()[i], 1);
+		tmp = detrend(tmp);
+		throw std::invalid_argument("test");
+
+		tmp = tmp - computeMean(tmp, 1, true).broadcast(tmp.dimensions());
+		tmp = tmp / computeStd(tmp, 1, 1, true).broadcast(tmp.dimensions());
+		trial_tmp.chip<0>(i) = tmp;
 	}
 	trial_sets = trial_tmp.slice(offsets, extents);
 	//tensor3dToCsv(trial_sets);
@@ -38,7 +49,6 @@ Eigen::Tensor<double, 2> PreprocessEngine::filtFilt(const Eigen::Tensor<double, 
 	int edge = 3 * (std::max(filter.b_.size(), filter.a_.size()) - 1);
 	Eigen::Tensor<double, 2> ext = oddExt(trial, edge, axis);
 	Eigen::Tensor<double, 2> zi = lFilterZi(filter);
-
 	// Forward filter.
 	Eigen::Tensor<double, 2> trial_0 = axisSlice(ext, 0, 1, 1, 1);
 	Eigen::Tensor<double, 2> ext_1 = lFilter(ext,
@@ -157,3 +167,86 @@ Eigen::Tensor<double, 2> PreprocessEngine::lFilter(const Eigen::Tensor<double, 2
 	}
 	return y;
 }
+
+Eigen::Tensor<double, 2> PreprocessEngine::detrend(const Eigen::Tensor<double, 2>& data, int axis, int bp) {
+	Eigen::array<Eigen::Index, 2> dshape = data.dimensions();
+	int N = dshape[axis];
+	std::vector<int> bp_vec = { 0, bp, N };
+	std::sort(bp_vec.begin(), bp_vec.end());
+	bp_vec.erase(std::unique(bp_vec.begin(), bp_vec.end()), bp_vec.end());
+	int Nreg = bp_vec.size() - 1;
+	int rnk = dshape.size();
+	if (axis < 0) {
+		axis = axis + rnk;
+	}
+	//@zikai 24.03.13 more complex ops should be here, simply use transpose to omit them in 2D occasion
+	Eigen::array<Eigen::Index, 2> newdims = { 1, 0 };
+	Eigen::Tensor<double, 2> newdata = data.shuffle(newdims);
+
+	// Find leastsq fit and remove it for each piece
+	for (int m = 0; m < Nreg; m++) {
+		int Npts = bp_vec[m + 1] - bp_vec[m];
+		Eigen::MatrixXf A = Eigen::MatrixXf::Ones(Npts, 2);
+		A.col(0) = Eigen::VectorXf::LinSpaced(Npts, 1, Npts) / Npts;
+
+		Eigen::array<Eigen::Index, 2> start = { bp_vec[m], 0 };
+		Eigen::array<Eigen::Index, 2> extent = { bp_vec[m + 1] - bp_vec[m], newdata.dimension(1) };
+
+		Eigen::Tensor<double, 2> slicedDataTensor = newdata.slice(start, extent);
+		Eigen::MatrixXd slicedDataMatrix = Eigen::Map<Eigen::MatrixXd>(slicedDataTensor.data(), extent[0], extent[1]);
+		Eigen::MatrixXf slicedData = slicedDataMatrix.cast<float>();
+
+		Eigen::BDCSVD<Eigen::MatrixXf> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+		Eigen::VectorXf coef = svd.solve(slicedData);
+		Eigen::MatrixXf result = A * coef; 
+	
+		Eigen::TensorMap<Eigen::Tensor<float, 2>> tensor(result.data(), result.rows(), result.cols());
+		Eigen::Tensor<double, 2> result_tensor = tensor.cast<double>();
+		std::string path= "./tmp1.csv";
+		tensor2dToCsv(result_tensor, path);
+
+		//@zikai 24.03.13 more complex ops should be here, simply omit in 2D occasion
+		newdata.slice(start, extent) = newdata.slice(start, extent) - result_tensor;
+	}
+
+	// Put data back in original shape.
+	Eigen::array<Eigen::Index, 2> tdshape = { dshape[0], dshape[1] }; 
+	Eigen::Tensor<double, 2> ret = newdata.reshape(tdshape); 
+	std::string path = "./tmp2.csv";
+	tensor2dToCsv(ret.shuffle(newdims), path);
+	return ret.shuffle(newdims);
+}
+
+Eigen::Tensor<double, 2> PreprocessEngine::computeMean(const Eigen::Tensor<double, 2>& data, int axis, bool transpose) {
+	// @zikai 24.03.13 haven't check for axis=0
+	Eigen::array<Eigen::DenseIndex, 1> dimensions = { axis };
+	Eigen::Tensor<double, 1> mean = data.mean(dimensions);
+	Eigen::Tensor<double, 2> result = data_->tensor1to2(mean);
+	if (transpose) {
+		return data_->transpose(result);
+	}
+	else {
+		return result;
+	}
+}
+
+Eigen::Tensor<double, 2> PreprocessEngine::computeStd(const Eigen::Tensor<double, 2>& data, int axis, int ddof, bool transpose) {
+	// @zikai 24.03.13 haven't check for axis=0
+	// For tensor n*m, axis=1 return 1*n, tensor.dimension(1) is m
+	Eigen::Tensor<double, 1> divisor(data.dimension(1-axis));
+	divisor.setConstant(data.dimension(axis) - ddof);
+
+	Eigen::Tensor<double, 2> mean = computeMean(data, axis, false);
+	Eigen::Tensor<double, 2> diff = data - mean.broadcast(data.dimensions());
+	Eigen::Tensor<double, 1> sum = diff.square().sum(Eigen::array<int, 1>({axis}));
+	Eigen::Tensor<double, 1> std = (sum / divisor).sqrt();
+	Eigen::Tensor<double, 2> result = data_->tensor1to2(std);
+	if (transpose) {
+		return data_->transpose(result);
+	}
+	else {
+		return result;
+	}
+}
+
+
