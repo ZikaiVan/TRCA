@@ -8,23 +8,12 @@ extern "C" __declspec(dllexport) void TrcaTrain(double* darray, double* pTemplat
 	std::unique_ptr<PreprocessEngine> pe;
 	std::unique_ptr<TrcaEngine> te;
 
-	//@zikai 数据排列方式修改
-	//data->data_ = Eigen::TensorMap<Eigen::Tensor<double, 4>>(
-	//darray, data->train_len_, data->stimulus_, data->electrodes_, data->samples_);
-	//Eigen::Tensor<double, 4> tensor(data->train_len_, data->stimulus_, data->electrodes_, data->samples_);
-	/*for (int block = 0; block < data->train_len_; block++) {
-		for (int stim = 0; stim < data->stimulus_; stim++) {
-			for (int elec = 0; elec < data->electrodes_; elec++) {
-				for (int sample = 0; sample < data->samples_; sample++) {
-					tensor(block, stim, elec, sample) = *darray;
-					darray++;
-				}
-			}
-		}
-	}*/
-	data->data_ = Eigen::TensorMap<Eigen::Tensor<double, 4>>(darray, data->train_len_, data->stimulus_, data->electrodes_, data->samples_);
-	std::string path = "./ori.csv";
-	tensor4dToCsv(data->data_, path);
+//行优先->列优先：转置
+//列优先->行优先：reshape，其中double需要cast到float上面才能reshape，
+//	reshape之后要赋值给tensor float变量之后才能cast到double，原因是reshape传回参数不能被cast解析
+	Eigen::Tensor<double, 4, Eigen::RowMajor> input = Eigen::TensorMap<Eigen::Tensor<double, 4, Eigen::RowMajor>>(
+		darray, data->train_len_, data->stimulus_, data->electrodes_, data->samples_);
+	data->data_ = input.swap_layout().shuffle(Eigen::array<int, 4>{3,2,1,0});
 
 	pe = std::make_unique<PreprocessEngine>(data.get());
 	te = std::make_unique<TrcaEngine>(data.get());
@@ -38,20 +27,12 @@ extern "C" __declspec(dllexport) void TrcaTrain(double* darray, double* pTemplat
 			data->train_trials_.chip<0>(block * data->stimulus_ + stimulus) = pe->filterBank(single_trial);
 		}
 	}
-	path = "./filterBank.csv";
-	tensor4dToCsv(data->train_trials_, path);
 
 	data->calculateTemplates();
 	te->fit();
 
-	path = "./templ.csv";
-	tensor4dToCsv(data->templates_, path);
-
-	path = "./U.csv";
-	tensor4dToCsv(te->U_trca_, path);
-
-	TensorTodArray<4>(data->templates_, pTemplate);
-	TensorTodArray<4>(te->U_trca_, pU);
+	memcpy(pTemplate, data->templates_.data(), data->templates_.size() * sizeof(double));
+	memcpy(pU, te->U_trca_.data(), te->U_trca_.size() * sizeof(double));
 }
 
 extern "C" __declspec(dllexport) void TrcaTest(double* darray, double* pTemplate, double* pU, double* pPred)
@@ -60,39 +41,13 @@ extern "C" __declspec(dllexport) void TrcaTest(double* darray, double* pTemplate
 	std::unique_ptr<PreprocessEngine> pe = std::make_unique<PreprocessEngine>(data.get());
 	std::unique_ptr<TrcaEngine> te = std::make_unique<TrcaEngine>(data.get());
 
-	//data->data_ = Eigen::TensorMap<Eigen::Tensor<double, 4>>(
-		//darray, data->blocks_, data->stimulus_, data->electrodes_, data->samples_);
-	//data->templates_ = *p_templates;
-	Eigen::Tensor<double, 4> tensor(data->test_len_, data->stimulus_, data->electrodes_, data->samples_);
-	for (int block = 0; block < data->test_len_; block++) {
-		for (int stim = 0; stim < data->stimulus_; stim++) {
-			for (int elec = 0; elec < data->electrodes_; elec++) {
-				for (int sample = 0; sample < data->samples_; sample++) {
-					tensor(block, stim, elec, sample) = *darray;
-					darray++;
-				}
-			}
-		}
-	}
-	data->data_ = tensor;
-
-	Eigen::Tensor<double, 4> Template(data->stimulus_, data->subbands_, data->electrodes_, data->samples_);
-	Eigen::Tensor<double, 4> U(data->subbands_, data->stimulus_, data->electrodes_, 1);
-	for (int subband = 0; subband < data->subbands_; subband++) {
-		for (int stim = 0; stim < data->stimulus_; stim++) {
-			for (int elec = 0; elec < data->electrodes_; elec++) {
-				U(subband, stim, elec, 0) = *pU;
-				pU++;
-				for (int sample = 0; sample < data->samples_; sample++) {
-					Template(stim, subband, elec, sample) = *pTemplate;
-					pTemplate++;
-				}
-			}
-		}
-	}
-
-	data->templates_ = Template;
-	te->U_trca_ = U;
+	Eigen::Tensor<double, 4, Eigen::RowMajor> input = Eigen::TensorMap<Eigen::Tensor<double, 4, Eigen::RowMajor>>(
+		darray, data->test_len_, data->stimulus_, data->electrodes_, data->samples_);
+	data->data_ = input.swap_layout().shuffle(Eigen::array<int, 4>{3, 2, 1, 0});
+	data->templates_ = Eigen::TensorMap<Eigen::Tensor<double, 4>>(
+		pTemplate, data->subbands_, data->stimulus_, data->electrodes_, data->samples_);
+	te->U_trca_ = Eigen::TensorMap<Eigen::Tensor<double, 4>>(
+		pU, data->subbands_, data->stimulus_, data->electrodes_, 1);
 
 	//@zikai test_trials init
 	//@zikai get single trial logic 要改
@@ -104,5 +59,5 @@ extern "C" __declspec(dllexport) void TrcaTest(double* darray, double* pTemplate
 		}
 	}
 
-	TensorTodArray<1>(te->predict(), pPred);
+	memcpy(pPred, te->predict().data(), te->predict().size() * sizeof(double));
 }

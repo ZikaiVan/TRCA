@@ -69,25 +69,22 @@ Eigen::Tensor<double, 2> TrcaEngine::trcaU(const Eigen::Tensor<double, 3>& trial
 		trca_X1 = trca_X1 + trials.chip<0>(i);
 		trca_X2_tmp.chip<0>(i) = data_->transpose(trials.chip<0>(i));
 	}
-	//tensor2dToCsv(trca_X1);
+
 	Eigen::Tensor<double, 2> trca_X2 = trca_X2_tmp.chip<0>(0);
 	for (int i = 1; i < trca_X2_tmp.dimension(0); ++i) {
 		Eigen::Tensor<double, 2> tmp = trca_X2.concatenate(trca_X2_tmp.chip<0>(i), 0);
 		trca_X2 = tmp;
 	}
-	//tensor2dToCsv(trca_X2);
 
 	Eigen::array<Eigen::IndexPair<int>, 1> product_dims = { Eigen::IndexPair<int>(1, 0) };
 	Eigen::Tensor<double, 2> S = trca_X1.contract(data_->transpose(trca_X1), product_dims)
 		- data_->transpose(trca_X2).contract(trca_X2, product_dims);
-	//tensor2dToCsv(S);
 	Eigen::Tensor<double, 2> trca_X2_mean = data_->tensor1to2(trca_X2.mean(Eigen::array<Eigen::DenseIndex, 1>({ 0 })));
 	trca_X2 = trca_X2 - trca_X2_mean.broadcast(Eigen::array<int, 2>{ int(trca_X2.dimension(0)), 1});
 	Eigen::Tensor<double, 2> Q = data_->transpose(trca_X2).contract(trca_X2, product_dims);
-	//tensor2dToCsv(Q);
 	Eigen::Tensor<double, 2> eig_vec = data_->solveEig(S, Q);
+
 	return eig_vec;
-	
 }
 
 Eigen::Tensor<double, 1> TrcaEngine::predict() const  {

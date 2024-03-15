@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <numeric>
 #include "utils.h"
 
 // public
@@ -144,14 +145,34 @@ Eigen::Tensor<double, 2> SSVEP::solveEig(const Eigen::Tensor<double, 2>& S, cons
     Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> Q_(Q.data(), Q.dimension(0), Q.dimension(1));
     Eigen::GeneralizedEigenSolver<Eigen::MatrixXd> solver;
     solver.compute(S_, Q_);
-    //Eigen::VectorXcd eigenvalues = solver.eigenvalues();
+    Eigen::VectorXd realEigenvalues = solver.eigenvalues().real();
     Eigen::MatrixXd realEigenvectors = solver.eigenvectors().real();
-    Eigen::Tensor<double, 2> tensor(realEigenvectors.rows(), realEigenvectors.cols());
-    for (int i = 0; i < realEigenvectors.rows(); ++i) {
-        for (int j = 0; j < realEigenvectors.cols(); ++j) {
-            tensor(i, j) = realEigenvectors(i, j);
-        }
+
+    // Sort the indices in descending order
+    std::vector<int> sort_idx(realEigenvalues.size());
+    std::iota(sort_idx.begin(), sort_idx.end(), 0);
+    std::sort(sort_idx.begin(), sort_idx.end(), [&realEigenvalues](int i1, int i2) {
+        return realEigenvalues[i1] > realEigenvalues[i2]; });
+
+    // Reorder the eigenvectors according to the sorted indices
+    Eigen::MatrixXd eig_vec = realEigenvectors;
+    for (int i = 0; i < sort_idx.size(); ++i) {
+        eig_vec.col(i) = realEigenvectors.col(sort_idx[i]);
     }
+
+    // Compute the square values
+    Eigen::MatrixXd square_val = (eig_vec.transpose() * Q_ * eig_vec).diagonal();
+
+    // Compute the norm values
+    Eigen::VectorXd norm_v = square_val.cwiseSqrt();
+
+    // Normalize the eigenvectors
+    for (int i = 0; i < eig_vec.cols(); ++i) {
+        eig_vec.col(i) /= norm_v[i];
+    }
+
+    Eigen::TensorMap<Eigen::Tensor<double, 2>> tensor(eig_vec.data(), eig_vec.rows(), eig_vec.cols());
+
     return tensor;
 }
 
@@ -194,6 +215,10 @@ void SSVEP::loadConfig(const std::string& path)
         else if (line.find("SSVEP_test_times") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);
             this->test_len_ = std::stod(value);
+        }
+        else if (line.find("SSVEP_type") != std::string::npos) {
+            std::string value = line.substr(line.find("=") + 1);
+            this->type_ = std::stod(value);
         }
         else if (line.find("SSVEP_duration") != std::string::npos) {
             std::string value = line.substr(line.find("=") + 1);

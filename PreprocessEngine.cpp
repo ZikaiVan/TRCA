@@ -34,14 +34,11 @@ Eigen::Tensor<double, 3> PreprocessEngine::filterBank(const Eigen::Tensor<double
 	for (int i = 0; i < data_->subbands_; i++) {
 		tmp = filtFilt(trial, bpf_.get()[i], 1);
 		tmp = detrend(tmp);
-		throw std::invalid_argument("test");
-
 		tmp = tmp - computeMean(tmp, 1, true).broadcast(tmp.dimensions());
 		tmp = tmp / computeStd(tmp, 1, 1, true).broadcast(tmp.dimensions());
 		trial_tmp.chip<0>(i) = tmp;
 	}
 	trial_sets = trial_tmp.slice(offsets, extents);
-	//tensor3dToCsv(trial_sets);
 	return trial_sets;
 }
 
@@ -197,24 +194,18 @@ Eigen::Tensor<double, 2> PreprocessEngine::detrend(const Eigen::Tensor<double, 2
 		Eigen::MatrixXf slicedData = slicedDataMatrix.cast<float>();
 
 		Eigen::BDCSVD<Eigen::MatrixXf> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
-		Eigen::VectorXf coef = svd.solve(slicedData);
+		Eigen::MatrixXf coef = svd.solve(slicedData);
 		Eigen::MatrixXf result = A * coef; 
 	
 		Eigen::TensorMap<Eigen::Tensor<float, 2>> tensor(result.data(), result.rows(), result.cols());
 		Eigen::Tensor<double, 2> result_tensor = tensor.cast<double>();
-		std::string path= "./tmp1.csv";
-		tensor2dToCsv(result_tensor, path);
 
 		//@zikai 24.03.13 more complex ops should be here, simply omit in 2D occasion
 		newdata.slice(start, extent) = newdata.slice(start, extent) - result_tensor;
 	}
 
 	// Put data back in original shape.
-	Eigen::array<Eigen::Index, 2> tdshape = { dshape[0], dshape[1] }; 
-	Eigen::Tensor<double, 2> ret = newdata.reshape(tdshape); 
-	std::string path = "./tmp2.csv";
-	tensor2dToCsv(ret.shuffle(newdims), path);
-	return ret.shuffle(newdims);
+	return newdata.shuffle(newdims);
 }
 
 Eigen::Tensor<double, 2> PreprocessEngine::computeMean(const Eigen::Tensor<double, 2>& data, int axis, bool transpose) {
