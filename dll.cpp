@@ -11,15 +11,15 @@ extern "C" __declspec(dllexport) int TrcaTrain(double* darray, double* pTemplate
 	Eigen::Tensor<double, 4> templates = Eigen::Tensor<double, 4>(stimulus, subbands, electrodes, num_samples);
 	Eigen::Tensor<double, 4> U_trca_ = Eigen::Tensor<double, 4>(subbands, stimulus, electrodes, 1);
 
-//ĞĞÓÅÏÈ->ÁĞÓÅÏÈ£º×ªÖÃ
-//ÁĞÓÅÏÈ->ĞĞÓÅÏÈ£ºreshape£¬ÆäÖĞdoubleĞèÒªcastµ½floatÉÏÃæ²ÅÄÜreshape£¬
-//	reshapeÖ®ºóÒª¸³Öµ¸øtensor float±äÁ¿Ö®ºó²ÅÄÜcastµ½double£¬Ô­ÒòÊÇreshape´«»Ø²ÎÊı²»ÄÜ±»cast½âÎö
+//è¡Œä¼˜å…ˆ->åˆ—ä¼˜å…ˆï¼šè½¬ç½®
+//åˆ—ä¼˜å…ˆ->è¡Œä¼˜å…ˆï¼šreshapeï¼Œå…¶ä¸­doubleéœ€è¦caståˆ°floatä¸Šé¢æ‰èƒ½reshapeï¼Œ
+//	reshapeä¹‹åè¦èµ‹å€¼ç»™tensor floatå˜é‡ä¹‹åæ‰èƒ½caståˆ°doubleï¼ŒåŸå› æ˜¯reshapeä¼ å›å‚æ•°ä¸èƒ½è¢«castè§£æ
 	Eigen::Tensor<double, 4, Eigen::RowMajor> dtensor = Eigen::TensorMap<Eigen::Tensor<double, 4, Eigen::RowMajor>>(
 		darray, train_len, stimulus, electrodes, num_samples);
 	Eigen::Tensor<double, 4> input = dtensor.swap_layout().shuffle(Eigen::array<int, 4>{3,2,1,0});
 
-	//@zikai 4Î¬£º(ÑµÁ·´ÎÊı£¬Ä¿±êÊı£¬µç¼«Í¨µÀÊı£¬µ¥Í¨µÀÊı¾İ)
-	//@zikai train_trials init£¬ÓÅ»¯trials·Ö¸î
+	//@zikai 4ç»´ï¼š(è®­ç»ƒæ¬¡æ•°ï¼Œç›®æ ‡æ•°ï¼Œç”µæé€šé“æ•°ï¼Œå•é€šé“æ•°æ®)
+	//@zikai train_trials initï¼Œä¼˜åŒ–trialsåˆ†å‰²
 	for (int block = 0; block < train_len; block++) {
 		for (int i = 0; i < stimulus; i++) {
 			Eigen::Tensor<double, 2> single_trial = pe->notch(input.chip(block, 0).chip(i, 0));
@@ -35,23 +35,23 @@ extern "C" __declspec(dllexport) int TrcaTrain(double* darray, double* pTemplate
 }
 
 extern "C" __declspec(dllexport) int TrcaTest(double* darray, double* pTemplate, double* pU, int* pPred,
-	int s_rate, int subbands, int stimulus, int electrodes, int num_samples)
+	int s_rate, int subbands, int test_len, int stimulus, int electrodes, int num_samples)
 {	
 	std::unique_ptr<Preprocess> pe = std::make_unique<Preprocess>(s_rate, subbands, electrodes, num_samples);
 	std::unique_ptr<Trca> te = std::make_unique<Trca>(subbands, stimulus, electrodes, num_samples);
-	Eigen::Tensor<double, 4> test_trial = Eigen::Tensor<double, 4>(stimulus, subbands, electrodes, num_samples);
+	Eigen::Tensor<double, 4> test_trial = Eigen::Tensor<double, 4>(test_len, subbands, electrodes, num_samples);
 
-	Eigen::Tensor<double, 4, Eigen::RowMajor> dtensor = Eigen::TensorMap<Eigen::Tensor<double, 4, Eigen::RowMajor>>(
-		darray, 1, stimulus, electrodes, num_samples);
-	Eigen::Tensor<double, 4> input = dtensor.swap_layout().shuffle(Eigen::array<int, 4>{3, 2, 1, 0});
+	Eigen::Tensor<double, 3, Eigen::RowMajor> dtensor = Eigen::TensorMap<Eigen::Tensor<double, 3, Eigen::RowMajor>>(
+		darray, test_len, electrodes, num_samples);
+	Eigen::Tensor<double, 3> input = dtensor.swap_layout().shuffle(Eigen::array<int, 3>{2, 1, 0});
 	Eigen::Tensor<double, 4> templates = Eigen::TensorMap<Eigen::Tensor<double, 4>>(
 		pTemplate, subbands, stimulus, electrodes, num_samples);
 	Eigen::Tensor<double, 4> U_trca = Eigen::TensorMap<Eigen::Tensor<double, 4>>(
 		pU, subbands, stimulus, electrodes, 1);
 
 	//@zikai test_trials init
-	for (int i = 0; i < stimulus; i++) {
-		Eigen::Tensor<double, 2> single_trial = pe->notch(input.chip(0, 0).chip(i, 0));
+	for (int i = 0; i < test_len; i++) {
+		Eigen::Tensor<double, 2> single_trial = pe->notch(input.chip(i, 0));
 		test_trial.chip<0>(i) = pe->filterBank(single_trial);
 	}
 

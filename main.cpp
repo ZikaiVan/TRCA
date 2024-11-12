@@ -7,7 +7,7 @@
 /*void trcaTest(int subject, std::string path);*/
 
 int main() {
-	//@zikai 23.12.2 内存释放问题
+	//@zikai 23.12.2 鍐呭瓨閲婃斁闂
 	/*getchar();
 	for (int subject = 20; subject < 30; subject++) {
 		std::cout << "S0" << subject << std::endl;
@@ -25,7 +25,7 @@ void trcaTest(int subject, std::string path) {
 	pe = new PreprocessEngine(data);
 	te = new TrcaEngine(data);
 
-	//@zikai 4维：(训练次数，目标数，电极通道数，单通道数据)
+	//@zikai 4缁达細(璁粌娆℃暟锛岀洰鏍囨暟锛岀數鏋侀�氶亾鏁帮紝鍗曢�氶亾鏁版嵁)
 	auto start = std::chrono::high_resolution_clock::now();
 	for (int block = 0; block < data->train_len_; block++) {
 		for (int stimulus = 0; stimulus < data->stimulus_; stimulus++) {

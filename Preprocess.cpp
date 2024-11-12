@@ -13,7 +13,7 @@ Preprocess::Preprocess(int s_rate, int subbands, int electrodes, int num_samples
 	subbands_ = subbands;
 	electrodes_ = electrodes;
 	num_samples_ = num_samples;
-	// 写死参数，可以改为config.ini配置.
+	// 鍐欐鍙傛暟锛屽彲浠ユ敼涓篶onfig.ini閰嶇疆.
 	// Lowpass, Highpass, bandPass, bandStop
 	bsf_ = std::make_unique<Cheby1Filter>(4, 2, 47, 53, s_rate_, 's');
 	bpf_ = std::make_unique<Cheby1Filter[]>(subbands);

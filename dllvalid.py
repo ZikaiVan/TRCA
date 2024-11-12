@@ -127,20 +127,24 @@ def dll():
                                     channels=ch_used,
                                     sig_len=tw)
     arr = np.array(X_test)
-    X_test = arr.reshape((1, 12, 8, 500))
-    Pred = np.empty((12), dtype=int)
+    arr = arr.reshape((1, 12, 8, 500)).squeeze()
+    ans = []
+    for i in range(0, 12):
+        X_test = arr[i, :, :]
+        Pred = np.empty((1), dtype=int)
 
-    pX_test = X_test.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    dPred = Pred.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
-    dll.TrcaTest(pX_test, dTemplate, dU, dPred, 250, 5, 12, 8, 500)
-    Pred = np.ctypeslib.as_array(ctypes.cast(dPred, ctypes.POINTER(ctypes.c_int)), Pred.shape)
-    acc = cal_acc(Y_true=Y_test, Y_pred=Pred)
+        pX_test = X_test.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        dPred = Pred.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+        dll.TrcaTest(pX_test, dTemplate, dU, dPred, 250, 5, 1, 12, 8, 500)
+        Pred = np.ctypeslib.as_array(ctypes.cast(dPred, ctypes.POINTER(ctypes.c_int)), Pred.shape)
+        ans.append(Pred[0])
+    acc = cal_acc(Y_true=Y_test, Y_pred=ans)
 
-    return Pred, acc
+    return ans, acc
 
 
 RUN_TEST = 1
-RUN_ORI = 1
+RUN_ORI = 0
 RUN_BOTH = 0
 
 if __name__ == '__main__':
@@ -151,7 +155,7 @@ if __name__ == '__main__':
     dllAcc=0
     oriTime=0
     oriAcc=0
-    for sub_idx in range(54, 55):
+    for sub_idx in range(1, 101):
         print(sub_idx)
         
         if RUN_TEST or RUN_BOTH:
