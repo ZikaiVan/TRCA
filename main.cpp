@@ -1,22 +1,22 @@
-#include "PreprocessEngine.h"
-#include "TrcaEngine.h"
+#include "Preprocess.h"
+#include "Trca.h"
 #include <iostream>
 #include <chrono>
 #include <string>
 
-void trcaTest(int subject, std::string path);
+/*void trcaTest(int subject, std::string path);*/
 
 int main() {
 	//@zikai 23.12.2 内存释放问题
-	getchar();
+	/*getchar();
 	for (int subject = 20; subject < 30; subject++) {
 		std::cout << "S0" << subject << std::endl;
 		std::string path="./data/S0"+std::to_string(subject)+".csv";
 		trcaTest(subject, path);
-	}
+	}*/
 	return 0;
 }
-
+/*
 void trcaTest(int subject, std::string path) {
 	SSVEP* data = new SSVEP();
 	PreprocessEngine* pe;
@@ -68,6 +68,6 @@ void trcaTest(int subject, std::string path) {
 	std::cout << "acc: " << acc*100 << "%\n";
 
 	//return 0;
-}
+}*/
 
 

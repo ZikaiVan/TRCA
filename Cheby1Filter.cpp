@@ -7,9 +7,9 @@ Cheby1Filter::Cheby1Filter(){}
 
 // type: Lowpass, Highpass, bandPass, bandStop
 Cheby1Filter::Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type) {
-    order_ = order;
+    order_ = order; 
     ripple_ = ripple;
-    srate_ = srate;
+    srate_ = srate; 
     warped_[0] = 2 * 2 * tan(M_PI * wn1 / srate_);
     warped_[1] = 2 * 2 * tan(M_PI * wn2 / srate_);
     bw_ = warped_[1] - warped_[0];

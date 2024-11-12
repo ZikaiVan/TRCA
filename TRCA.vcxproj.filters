@@ -18,13 +18,10 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="PreprocessEngine.cpp">
+    <ClCompile Include="Preprocess.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="utils.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="SSVEP.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Cheby1Filter.cpp">
@@ -33,7 +30,7 @@
     <ClCompile Include="Cheby1Filter.h">
       <Filter>头文件</Filter>
     </ClCompile>
-    <ClCompile Include="TrcaEngine.cpp">
+    <ClCompile Include="TRCA.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="dll.cpp">
@@ -41,16 +38,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PreprocessEngine.h">
+    <ClInclude Include="Preprocess.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="SSVEP.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TrcaEngine.h">
+    <ClInclude Include="TRCA.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="dll.h">
@@ -58,7 +52,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="README.md" />
-    <None Include="config.ini" />
+    <None Include="Readme.md" />
   </ItemGroup>
 </Project>
