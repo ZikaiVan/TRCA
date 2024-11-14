@@ -19,6 +19,33 @@ Eigen::Tensor<double, 4> calculateTemplates(Eigen::Tensor<double, 4>& train_tria
     return templates;
 }
 
+Eigen::Tensor<double, 4> tensor4dFromCsv(const char* path, int dim0, int dim1, int dim2, int dim3) {
+    double* darray = new double[dim0 * dim1 * dim2 * dim3];
+    std::ifstream file(path);
+    std::string line;
+    int i = 0, j = 0, k = 0, l = 0, index = 0;
+
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string value;
+        while (std::getline(ss, value, ',')) {
+            darray[index++] = std::stod(value);
+            if (l++ == dim3) {
+                l = 0;
+                if (k++ == dim2) {
+                    k = 0;
+                    if (j++ == dim1) {
+                        j = 0;
+                        i++;
+                    }
+                }
+            }
+        }
+    }
+    Eigen::Tensor<double, 4> tensor = Eigen::TensorMap<Eigen::Tensor<double, 4>>(darray, dim3, dim2, dim1, dim0);
+    return tensor.shuffle(Eigen::array<Eigen::Index, 4>{3, 2, 1, 0 });
+}
+
 Eigen::Tensor<double, 2> tensor1to2(const Eigen::Tensor<double, 1>& tensor) {
     Eigen::Tensor<double, 2> tensor1(1, tensor.dimension(0));
     tensor1.chip<0>(0) = tensor;
@@ -177,11 +204,16 @@ void tensor4dToCsv(const Eigen::Tensor<double, 4>& tensor, const char* path) {
 void WriteToFile(double data) {
     std::ofstream file("./debug.txt", std::ios::app);
     if (file.is_open()) {
-        file << data;
-        file << "\n";
+        file << data << ',';
         file.close();
     }
 }
 
-
+void WriteToFile(char data) {
+    std::ofstream file("./debug.txt", std::ios::app);
+    if (file.is_open()) {
+        file << data;
+        file.close();
+    }
+}
 

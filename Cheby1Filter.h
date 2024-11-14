@@ -6,11 +6,11 @@
 #define M_PI 3.1415926
 
 class Cheby1Filter {
-public:
+public: 
     Eigen::Tensor<double, 1> b_;
     Eigen::Tensor<double, 1> a_;
     Cheby1Filter();
-    Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type);
+    Cheby1Filter(int order, double ripple, double wn1, double wn2, double srate, char type);
 
 private:
     int order_;

@@ -17,9 +17,11 @@ Preprocess::Preprocess(int s_rate, int subbands, int electrodes, int num_samples
 	// Lowpass, Highpass, bandPass, bandStop
 	bsf_ = std::make_unique<Cheby1Filter>(4, 2, 47, 53, s_rate_, 's');
 	bpf_ = std::make_unique<Cheby1Filter[]>(subbands);
+	std::vector<int> passband = { 6, 14, 22, 30, 38, 46, 54, 62, 70, 78 };
 
 	for (int i = 0; i < subbands; i++) {
-		bpf_[i] = Cheby1Filter(4, 1, 9 * (i + 1), 90, s_rate_, 'p');
+		//bpf_[i] = Cheby1Filter(4, 1, 9 * (i + 1), 90, s_rate_, 'p');
+		bpf_[i] = Cheby1Filter(6, 0.5, passband[i], 90, s_rate_, 'p');
 	}
 }
 

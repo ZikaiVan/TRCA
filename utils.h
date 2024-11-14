@@ -6,6 +6,7 @@
 
 // DATA UTILS
 Eigen::Tensor<double, 4> calculateTemplates(Eigen::Tensor<double, 4>& tensor, int stimulus_, int train_len_);
+Eigen::Tensor<double, 4> tensor4dFromCsv(const char* path, int dim0, int dim1, int dim2, int dim3);
 Eigen::Tensor<double, 2> tensor1to2(const Eigen::Tensor<double, 1>& tensor1);
 Eigen::Tensor<double, 2> transpose(const Eigen::Tensor<double, 2>& tensor);
 Eigen::Tensor<double, 2> rowCompanion(const Eigen::Tensor<double, 2>& input);
@@ -21,6 +22,7 @@ void tensor2dToCsv(const Eigen::Tensor<double, 2>& tensor, const char* path, int
 void tensor3dToCsv(const Eigen::Tensor<double, 3>& tensor, const char* path, int flag = 0);
 void tensor4dToCsv(const Eigen::Tensor<double, 4>& tensor, const char* path);
 void WriteToFile(double data);
+void WriteToFile(char data);
 
 template<int D>
 void TensorTodArray(Eigen::Tensor<double, D> tensor, double* array) {

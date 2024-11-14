@@ -25,7 +25,7 @@ Trca::Trca(int subbands, int stimulus, int electrodes, int num_samples, int trai
 	}
 	else {
 		for (int i = 0; i < subbands_; i++) {
-			filter_banks_weights(i) = pow(i+1, -1.25) + 0.15;
+			filter_banks_weights(i) = pow(i+1, -1.25) + 0.25;
 		}
 	}
 	filter_banks_weights_ = filter_banks_weights;
@@ -86,9 +86,10 @@ Eigen::Tensor<double, 2> Trca::trcaU(const Eigen::Tensor<double, 3>& trials) con
 }
 
 Eigen::Tensor<int, 1> Trca::predict(const Eigen::Tensor<double, 4>& trials, const Eigen::Tensor<double, 4>& templates,
-	const Eigen::Tensor<double, 4>& U, const Eigen::Tensor<double, 4>& V) const {
+	const Eigen::Tensor<double, 4>& U, const Eigen::Tensor<double, 4>& V, std::vector<double> &coeff) const {
 	Eigen::Tensor<int, 1> pred_labels(trials.dimension(0));
 	Eigen::array<Eigen::IndexPair<int>, 1> product_dims = { Eigen::IndexPair<int>(1, 0) };
+
 	for (int i = 0; i < trials.dimension(0); i++) {
 		Eigen::Tensor<double, 2> r = tensor1to2(filter_banks_weights_).
 			contract(canoncorrWithUV(trials.chip<0>(i), templates, U, V), product_dims);
@@ -97,6 +98,7 @@ Eigen::Tensor<int, 1> Trca::predict(const Eigen::Tensor<double, 4>& trials, cons
 			if (r(j) == max_coeff(0)) {
 				pred_labels(i) = j;
 			}
+			coeff.push_back(r(j));
 		}
 	}
 	return pred_labels;

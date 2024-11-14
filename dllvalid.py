@@ -56,13 +56,13 @@ def original():
                                         trials=all_trials,
                                         channels=ch_used,
                                         sig_len=tw)
-    a = np.array(X_train)
+    X_train = np.array(X_train)
     recog_model.fit(X=X_train, Y=Y_train, ref_sig=ref_sig, freqs=freqs)
     a = np.array(recog_model.model['template_sig'])
     b = np.array(recog_model.model['U'])
-
-    write_4d_array_to_csv(a, 'template_ori.csv')
-    write_4d_array_to_csv(b, 'u_ori.csv')
+    # write_4d_array_to_csv(X_train, 'train_ori.csv')
+    # write_4d_array_to_csv(a, 'template_ori.csv')
+    # write_4d_array_to_csv(b, 'u_ori.csv')
 
     # Get testing data and test the recognition model
     X_test, Y_test = dataset.get_data(sub_idx=sub_idx,
@@ -71,7 +71,7 @@ def original():
                                     channels=ch_used,
                                     sig_len=tw)
     X_test = np.array(X_test)
-    write_4d_array_to_csv(X_test, 'test_ori.csv')
+    # write_4d_array_to_csv(X_test, 'test_ori.csv')
 
     pred_label = recog_model.predict(X_test)
     acc = cal_acc(Y_true=Y_test, Y_pred=pred_label[0])
@@ -103,23 +103,30 @@ def dll():
     # Get training data and train the recognition model
     ref_sig = dataset.get_ref_sig(tw, harmonic_num)
     freqs = dataset.stim_info['freqs']
-
+    dll = ctypes.cdll.LoadLibrary('./x64/Release/TRCA.dll')
     ###########################################    TRAIN    ###############################################
+    DEBUG = 0
     X_train, Y_train = dataset.get_data(sub_idx=sub_idx,
                                         blocks=train_block_list,
                                         trials=all_trials,
                                         channels=ch_used,
                                         sig_len=tw)
-
-    arr = np.array(X_train)
-    X_train = arr.reshape((9, 12, 8, 500))
-    dll = ctypes.cdll.LoadLibrary('./TRCA.dll')
-    pX_train = X_train.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    
+    X_train = np.array(X_train).reshape((9, 12, 8, 500))
     template = np.empty((12, 5, 8, 500), dtype=np.double) 
     U = np.empty((5, 12, 8, 1), dtype=np.double)
+    X_train_fb = np.empty((9*12, 5, 8, 500))
+
+    pX_train = X_train.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     dTemplate = template.ctypes.data_as(ctypes.POINTER(ctypes.c_double)) # double pointer Template
     dU = U.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-    dll.TrcaTrain(pX_train, dTemplate, dU, 250, 5, 9, 12, 8, 500)
+    pX_train_fb = X_train_fb.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
+    if RUN_TEST_SPLIT:
+        dll.FilterBank(pX_train, pX_train_fb, 250, 5, 9, 12, 8, 500, DEBUG)
+        dll.TrcaTrainOnly(pX_train_fb, dTemplate, dU, 250, 5, 9, 12, 8, 500, DEBUG)
+    else:
+        dll.TrcaTrain(pX_train, dTemplate, dU, 250, 5, 9, 12, 8, 500, DEBUG)
     ###########################################    TEST    ###############################################
     X_test, Y_test = dataset.get_data(sub_idx=sub_idx,
                                     blocks=test_block_list,
@@ -127,15 +134,24 @@ def dll():
                                     channels=ch_used,
                                     sig_len=tw)
     arr = np.array(X_test)
-    arr = arr.reshape((1, 12, 8, 500)).squeeze()
+    arr = arr.reshape((1, 12, 8, 500))
     ans = []
     for i in range(0, 12):
-        X_test = arr[i, :, :]
+        X_test = arr[:, i, :, :]
         Pred = np.empty((1), dtype=int)
+        X_test_fb = np.empty((1, 5, 8, 500))
+        coeff = np.empty((12), dtype=np.double)
 
         pX_test = X_test.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
         dPred = Pred.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
-        dll.TrcaTest(pX_test, dTemplate, dU, dPred, 250, 5, 1, 12, 8, 500)
+        pX_test_fb = X_test_fb.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        dcoeff = coeff.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+
+        if RUN_TEST_SPLIT:
+            dll.FilterBank(pX_test, pX_test_fb, 250, 5, 1, 1, 8, 500, DEBUG)
+            dll.TrcaTestOnly(pX_test_fb, dTemplate, dU, dcoeff, dPred, 250, 5, 1, 12, 8, 500)
+        else:
+            dll.TrcaTest(pX_test, dTemplate, dU, dcoeff, dPred, 250, 5, 1, 12, 8, 500, DEBUG)
         Pred = np.ctypeslib.as_array(ctypes.cast(dPred, ctypes.POINTER(ctypes.c_int)), Pred.shape)
         ans.append(Pred[0])
     acc = cal_acc(Y_true=Y_test, Y_pred=ans)
@@ -144,6 +160,7 @@ def dll():
 
 
 RUN_TEST = 1
+RUN_TEST_SPLIT = 0
 RUN_ORI = 0
 RUN_BOTH = 0
 

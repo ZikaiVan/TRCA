@@ -6,7 +6,7 @@
 Cheby1Filter::Cheby1Filter(){}
 
 // type: Lowpass, Highpass, bandPass, bandStop
-Cheby1Filter::Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type) {
+Cheby1Filter::Cheby1Filter(int order, double ripple, double wn1, double wn2, double srate, char type) {
     order_ = order; 
     ripple_ = ripple;
     srate_ = srate; 

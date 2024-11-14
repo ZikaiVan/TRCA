@@ -5,10 +5,10 @@
 class Trca {
 public:
 	~Trca();
-	Trca(int subbands, int stimulus, int electrodes, int num_samples, int train_len=1, int fb_weights_type=1);
+	Trca(int subbands, int stimulus, int electrodes, int num_samples, int train_len=1, int fb_weights_type=0);
 	Eigen::Tensor<double, 4> fit(const Eigen::Tensor<double, 4>& trials, const Eigen::Tensor<double, 4>& templates);
 	Eigen::Tensor<int, 1> predict(const Eigen::Tensor<double, 4>& trials, const Eigen::Tensor<double, 4>& templates,
-		const Eigen::Tensor<double, 4>& U, const Eigen::Tensor<double, 4>& V) const;
+		const Eigen::Tensor<double, 4>& U, const Eigen::Tensor<double, 4>& V, std::vector<double>& coeff) const;
 
 private:
 	int subbands_;
