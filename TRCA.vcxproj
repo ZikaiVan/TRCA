@@ -46,7 +46,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -75,8 +75,8 @@
     <LibraryPath>.\eigen-3.4.0\Eigen;.\eigen-3.4.0\unsupported\Eigen\CXX11\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\zikai\Desktop\TRCA\eigen-3.4.0\Eigen;C:\Users\zikai\Desktop\TRCA\eigen-3.4.0\unsupported\Eigen\CXX11;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\zikai\Desktop\TRCA\eigen-3.4.0\Eigen;C:\Users\zikai\Desktop\TRCA\eigen-3.4.0\unsupported\Eigen\CXX11;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\zikai\Desktop\TRCA\TRCA-DLLsrc\eigen-3.4.0\Eigen;C:\Users\zikai\Desktop\TRCA\TRCA-DLLsrc\eigen-3.4.0\unsupported\Eigen\CXX11;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\zikai\Desktop\TRCA\TRCA-DLLsrc\eigen-3.4.0\Eigen;C:\Users\zikai\Desktop\TRCA\TRCA-DLLsrc\eigen-3.4.0\unsupported\Eigen\CXX11;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -141,21 +141,20 @@
   <ItemGroup>
     <ClCompile Include="Cheby1Filter.cpp" />
     <ClCompile Include="Cheby1Filter.h" />
+    <ClCompile Include="dll.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="PreprocessEngine.cpp" />
-    <ClCompile Include="SSVEP.cpp" />
-    <ClCompile Include="TrcaEngine.cpp" />
+    <ClCompile Include="Preprocess.cpp" />
+    <ClCompile Include="TRCA.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PreprocessEngine.h" />
-    <ClInclude Include="SSVEP.h" />
-    <ClInclude Include="TrcaEngine.h" />
+    <ClInclude Include="dll.h" />
+    <ClInclude Include="Preprocess.h" />
+    <ClInclude Include="TRCA.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="config.ini" />
-    <None Include="README.md" />
+    <None Include="Readme.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

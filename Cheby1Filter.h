@@ -1,15 +1,16 @@
-#pragma once
+#ifndef CHEBY1FILTER_H
+#define CHEBY1FILTER_H
 #include <Dense>
 #include <Core>
 #include <Tensor>
 #define M_PI 3.1415926
 
 class Cheby1Filter {
-public:
+public: 
     Eigen::Tensor<double, 1> b_;
     Eigen::Tensor<double, 1> a_;
     Cheby1Filter();
-    Cheby1Filter(int order, int ripple, double wn1, double wn2, double srate, char type);
+    Cheby1Filter(int order, double ripple, double wn1, double wn2, double srate, char type);
 
 private:
     int order_;
@@ -30,3 +31,4 @@ private:
     Eigen::VectorXcd convolve(const Eigen::VectorXcd& x, const Eigen::VectorXcd& y, int loc);
     Eigen::Tensor<double, 1> vecXcd2Tensor(Eigen::VectorXcd vector);
 };
+#endif // CHEBY1FILTER_H

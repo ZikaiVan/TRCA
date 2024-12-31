@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SSVEP_H
+#define SSVEP_H
 #include <string>
 #include <Dense>
 #include <Core>
@@ -6,11 +7,11 @@
 
 class SSVEP {
 public:
-	Eigen::Tensor<double, 4> data_;
-	Eigen::Tensor<double, 4> train_trials_;
-	Eigen::Tensor<int, 1> train_labels_;
-	Eigen::Tensor<double, 4> test_trials_;
-	Eigen::Tensor<int, 1> test_labels_;
+	//Eigen::Tensor<double, 4> data_;
+	//Eigen::Tensor<double, 4> train_trials_;
+	//Eigen::Tensor<int, 1> train_labels_;
+	//Eigen::Tensor<double, 4> test_trials_;
+	//Eigen::Tensor<int, 1> test_labels_;
 	Eigen::Tensor<double, 4> templates_;
 	int s_rate_;
 
@@ -32,12 +33,11 @@ public:
 	int samples_;
 	
 
-	SSVEP(const std::string& path = "./config.ini");
-	void loadCsv(const std::string& path);
-	void loadMat(const std::string& path);
+	SSVEP(int train_len, int s_rate, double duration, int subbands, int electrodes, int stimulus);
+	SSVEP(int s_rate, double duration, int subbands, int electrodes, int stimulus);
 
 	void calculateTemplates();
-	Eigen::Tensor<double, 2> getSingleTrial(int block, int stimulus) const;
+	//Eigen::Tensor<double, 2> getSingleTrial(int block, int stimulus) const;
 	Eigen::Tensor<double, 2> tensor1to2(const Eigen::Tensor<double, 1>& tensor1) const;
 	Eigen::Tensor<double, 2> transpose(const Eigen::Tensor<double, 2>& tensor) const;
 	Eigen::Tensor<double, 2> rowCompanion(const Eigen::Tensor<double, 2>& input) const;
@@ -47,6 +47,10 @@ public:
 	Eigen::Tensor<double, 2> vecCov(Eigen::Tensor<double, 1>& a, Eigen::Tensor<double, 1>& b,
 		bool rowvar=true, const std::string& dtype="real") const;
 
-private:
-	void loadConfig(const std::string& path = "./config.ini");
+//private:
+//	void loadTrials(int mode);
+//	void loadCsv(const std::string& path);
+//	void loadMat(const std::string& path);
+//	void loadConfig(const std::string& path = "./config.ini");
 };
+#endif SSVEP_H
