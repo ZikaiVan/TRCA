@@ -1,252 +1,253 @@
 ## TRCA-cpp-src
-- Cheby1Filter类: 带通、带阻滤波器设计
+- class Cheby1Filter: Design of bandpass, bandstop filters
 
-- Preprocess类: notch滤波、filterBank、detrend、均值计算、标准差计算
+- class Preprocess: notch, FilterBank, detrend, average, std calculation
 
-- TRCA类: TRCA算法实现
+- class TRCA: TRCA implementation
 
-- utils: 包含数据函数、调试函数
-    - TODO: 其中一部分数据函数应该放到别的类里面
-
-- vstudio默认gb2312编码，vs code默认utf8编码，大部分含中文注释代码的文件已经转换为utf8编码
+- utils: data, debug function
+  
+- for Chinese, vstudio默认gb2312编码, vs code默认utf8编码, 大部分含中文注释文件已经转换为utf8编码
 
 ## TRCA.dll
-- 具体实现参照[dll.cpp](./dll.cpp)，python调用参照[dllValid.py](./dllValid.py)、[onlineValid.py](./onlineValid.py)
+- For source code, refer to[dll.cpp](./dll.cpp).
+  
+- For python call, refer to[dllValid.py](./dllValid.py), and [onlineValid.py](./onlineValid.py)
 
 ### FilterBank
-完成notch滤波、filterBank滤波（最多10组6阶带通，[{6, 14, 22, 30, 38, 46, 54, 62, 70, 78}，90]）、去直流、标准化操作，滤波器设计为Cheby1
+- Implementation of notch, FilterBank (10 banks,  6-th order bandpass at most: [{6, 14, 22, 30, 38, 46, 54, 62, 70, 78}, 90]), detrend, normalization.
+  
+- We use Cheby1 to design all filters.
 
-- 输入（2指针、7int）
-    - darray: double指针（行优先的4D数组，[轮数，刺激数，电极数，信号点数]），一般情况下，轮数=1，刺激数=trials数即可
+- Input(2 pointers, 7 int)
+    - darray: double* (row major 4D array, [block, stimulus, electrode, samples]). Generally, block=1, stimulus=the number of trials.
 
-    - dout: double指针（行优先的4D数组，[轮数*刺激数，filterBank数，电极数，信号点数]）
+    - dout: double* (row major 4D array, [block*stimulus, subbands number, electrode, samples])
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands in FilterBank)
 
-    - len: int（轮数）
+    - len: int (the number of blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1进入调试，将filterBank数据覆盖写入路径下csv文件
+    - debug: int (=1 to debug mode, the data of FilterBank will be written into ./FilterBank.csv)
 
-- 输出
-    - dout: 指针拷贝数据
+- Output
+    - dout: memcpy to dout*
 
-    - 返回错误码（还没做，下同）
-
+    - exit code (TODO)
 ### TrcaTrain
-完整的TRCA训练流程，filterBank+TrcaTrainOnly
+TRCA training (=FilterBank + TrcaTrainOnly)
 
-- 输入（3指针、7int）
-    - darray: double指针（行优先的4D数组，[训练轮数，刺激数，电极数，信号点数]）
+- Input (3 pointers, 7 int)
+    - darray: double* (row major 4D array, [train blocks, stimulus, electrodes, samples])
 
-    - pTemplate: double指针（4D数组，[刺激数，filterBank数，电极数，信号点数]），一般不考虑该数组的存储主序，因为会直接输入给Test使用，当前输出的是列优先的数据，**下同**
+    - pTemplate: double* (4D array, [stimulus, subbans, electrodes, samples]). Generally, we don't consider it is row major or col major, since it will be directly used in TrcaTest. This function will output col major data, **The same applies hereinafter**.
 
-    - pU: double指针（4D数组，[filterBank数量，刺激数，电极数，1]），一般不考虑该数组的存储主序，因为会直接输入给Test使用，当前输出的是列优先的数据，**下同**
+    - pU: double* (4D array, [subbands, stimulus, electrodes, 1]). Generally, we don't consider it is row major or col major, since it will be directly used in TrcaTest. This function will output col major data, **The same applies hereinafter**.
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands in FilterBank)
 
-    - train_len: int（训练轮数）
+    - train_len: int (the number of train blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1时将templates和u覆盖写入路径下csv文件，传入2时将input、filterBank数据、templates和u覆盖写入路径下csv文件
+    - debug: int (=1 to csv_output mode, `templates`, and `u` will be written into ./\*.csv. =2 to debug mode, the data of FilterBank, `templates`, and `u` will be written into ./\*.csv.)
 
-- 输出
-    - pTemplate: 指针拷贝数据
+- Output
+    - pTemplate: memcpy to pTemplate*
 
-    - pU: 指针拷贝数据
+    - pU: memcpy to pU
 
-    - 返回错误码
-
+    - exit code (TODO)
 
 ### TrcaTrainOnly
-只执行Trca训练功能
+Only train of TRCA is implemented, without FilterBank.
 
-- 输入（3指针、7int）
-    - darray: double指针（行优先的4D数组，[训练轮数*刺激数，filterBank数，电极数，信号点数]），即filterBank完成后的数据
+- Input (3 pointers, 7int)
+    - darray: double* (row major 4D array, [train blocks*stimulus, subbands, electrodes, samples]), which is the output of FilterBank
 
-    - pTemplate: double指针（4D数组，[刺激数，filterBank数，电极数，信号点数]）
+    - pTemplate: double* (4D array, [stimulus, subbands, electrodes, samples])
 
-    - pU: double指针（4D数组，[filterBank数量，刺激数，电极数，1]）
+    - pU: double* (4D array, [subbands, stimulus, electrodes, 1])
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands)
 
-    - train_len: int（训练轮数）
+    - train_len: int (the number of train blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1时将templates和u覆盖写入路径下csv文件，传入2时将input、filterBank数据、templates和u覆盖写入路径下csv文件
+    - debug: int (=1 to csv_output mode, `templates`, and `u` will be written to ./\*.csv. =2 to debug mode, `input`, `templates`, and `u` will be written to ./\*.csv)
 
-- 输出
-    - pTemplate: 指针拷贝数据
+- Output
+    - pTemplate: memcpy to pTemplate*
 
-    - pU: 指针拷贝数据
+    - pU: memcpy to pU*
 
-    - 返回错误码
+    - exit code (TODO)
 
 ### TrcaTest
-完整的TRCA测试流程，filterBank+TrcaTestOnly
+TRCA testing (=FilterBank + TrcaTestOnly)
 
-- 输入（5指针、7int）
-    - darray: double指针（行优先的4D数组，[1，测试次数，电极数，信号点数]）
+- Input (5 pointers, 7 int)
+    - darray: double* (row major 4D array, [1, test blocks, electrodes, samples])
 
-    - pTemplate: double指针，train得到的指针
+    - pTemplate: double* (output of TrcaTrain)
 
-    - pU: double指针，train得到的指针
+    - pU: double*, (output of TrcaTrain)
 
-    - pcoeff: double指针（1D数组，[测试次数*stimulus]）
+    - pcoeff: double* (1D array, [test blocks*stimulus])
 
-    - pPred: int指针（1D数组，[测试次数]）
+    - pPred: int* (1D array, [test blocks])
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands)
 
-    - test_len: int（训练轮数）
+    - test_len: int (the number of test blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1时进入调试，将templates、u和filterBank数据覆盖写入路径下csv文件
+    - debug: int (=1 to debug mode, `templates`, and `u` will be written to ./\*.csv)
 
-- 输出
-    - pPred: 指针拷贝数据
+- Output
+    - pPred: memcpy to
 
-    - pcoeff: 指针拷贝数据
+    - pcoeff: memcpy to
 
-    - 返回错误码
+    - exit code (TODO)
 
 ### TrcaTestOnly
-只执行Trca测试功能
+Only test of TRCA is implemented, without FilterBank.
 
-- 输入（5指针、7int）
-    - darray: double指针（行优先的4D数组，[1*测试次数，filterBank数，电极数，信号点数]）
+- Input (5 pointers, 7 int)
+    - darray: double* (row major 4D array, [1*test blocks, subbands, electrodes, samples])
 
-    - pTemplate: double指针，train得到的指针
+    - pTemplate: double*, (output of TrcaTrain)
 
-    - pU: double指针，train得到的指针
+    - pU: double*, (output of TrcaTrain)
 
-    - pcoeff: double指针（1D数组，[测试次数*stimulus]）
+    - pcoeff: double* (1D array, [test blocks*stimulus])
 
-    - pPred: int指针（1D数组，[测试次数]）
+    - pPred: int* (1D array, [test blocks])
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands)
 
-    - test_len: int（训练轮数）
+    - test_len: int (the number of test blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1时进入调试，将templates、u和输入数据覆盖写入路径下csv文件
+    - debug: int (=1 to debug mode, `templates`, `u` ,and `input` will be written to ./\*.csv)
 
-- 输出
-    - pPred: 指针拷贝数据
+- Output
+    - pPred: memcpy to pPred*
 
-    - pcoeff: 指针拷贝数据
+    - pcoeff: memcpy to pcoeff*
 
-    - 返回错误码
+    - exit code (TODO)
 
 ### TrcaTestCsv
-完整的TRCA测试流程，filterBank+TrcaTestOnly，使用csv文件输入template和u
+TRCA testing (=FilterBank + TrcaTestOnly), which use template.csv and u.csv for input
 
-- 输入（5指针、7int）
-    - darray: double指针（行优先的4D数组，[1，测试次数，电极数，信号点数]）
+- Input (5 pointers, 7 int)
+    - darray: double* (row major 4D array, [1, test blocks, electrodes, samples])
 
-    - pTemplate: char指针，存放templates的csv文件路径
+    - pTemplate: char*, path to templates.csv
 
-    - pU: char指针，存放u的csv文件路径
+    - pU: char*, path to u.csv
 
-    - pcoeff: double指针（1D数组，[测试次数*stimulus]）
+    - pcoeff: double* (1D array, [test blocks*stimulus])
 
-    - pPred: int指针（1D数组，[测试次数]）
+    - pPred: int* (1D array, [test blocks])
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands)
 
-    - test_len: int（训练轮数）
+    - test_len: int (the number of test blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1时进入调试，将templates、u和filterBank数据覆盖写入路径下csv文件
+    - debug: int (=1 to debug mode, `templates`, and `u` will be written to ./\*.csv)
 
-- 输出
-    - pPred: 指针拷贝数据
+- Output
+    - pPred: memcpy to pPred*
 
-    - pcoeff: 指针拷贝数据
+    - pcoeff: memcpy to pcoeff*
 
-    - 返回错误码
+    - exit code (TODO)
 
 ### TrcaTestOnlyCsv
-只执行Trca测试功能，使用csv文件输入template和u
+TRCA testing, without FilterBank, which use template.csv and u.csv for input
 
-- 输入（5指针、7int）
-    - darray: double指针（行优先的4D数组，[1，测试次数，电极数，信号点数]）
+- Input (5 pointers, 7 int)
+    - darray: double* (row major 4D array, [1, test blocks, electrodes, samples])
 
-    - pTemplate: char指针，存放templates的csv文件路径
+    - pTemplate: char*, path to templates.csv
 
-    - pU: char指针，存放u的csv文件路径
+    - pU: char*, path to u.csv
 
-    - pcoeff: double指针（1D数组，[测试次数*stimulus]）
+    - pcoeff: double* (1D array, [test blocks*stimulus])
 
-    - pPred: int指针（1D数组，[测试次数]）
+    - pPred: int* (1D array, [test blocks])
 
-    - s_rate: int（采样率）
+    - s_rate: int (sampling rate)
 
-    - subbands: int（filterBank数量）
+    - subbands: int (the number of subbands)
 
-    - test_len: int（训练轮数）
+    - test_len: int (the number of test blocks)
 
-    - stimulus: int（刺激数）
+    - stimulus: int (the number of stimulus)
 
-    - electrodes: int（电极数）
+    - electrodes: int (the number of electrodes)
 
-    - num_samples: int（信号点数）
+    - num_samples: int (the number of samples)
 
-    - debug: int，传入1时进入调试，将templates、u和filterBank数据覆盖写入路径下csv文件
+    - debug: int (=1 to debug mode, `templates`, and `u` will be written to ./\*.csv)
 
-- 输出
-    - pPred: 指针拷贝数据
+- Output
+    - pPred: memcpy to pPred*
 
-    - pcoeff: 指针拷贝数据
+    - pcoeff: memcpy to pcoeff*
 
-    - 返回错误码
+    - exit code (TODO)
 
 
-## 测试
-- dllvalid.py: 使用[SSVEP-AnaTool]（https://github.com/pikipity/SSVEP-Analysis-Toolbox）测试，需确认toolbox版本，也可使用本repo中提供的toolbox
+## Application
+- dllvalid.py: use [SSVEP-AnaTool] (https://github.com/pikipity/SSVEP-Analysis-Toolbox) for testing. Need to check the version of toolbox, or use toolbox in this repo.
 
-- 使用Wearable-SSVEP（wet）数据集测试，其中使用SSVEPAnalysisToolbox库测试时，需要确认库get_data方法截取的数据是否正确，需比照toolbox代码和数据集说明
+- Use Wearable-SSVEP (wet) dataset for testing. When using SSVEPAnalysisToolbox, it is better to check if `get_data` function in the toolbox can get correct data segments. Need to compare the toolbox code and the dataset documentation. 
 
-- 测试数据重排请使用可控的循环实现，避免调用transpose等api
+- If data rearrange is needed, we suggest use loop to manually do that, rather than transpose or reshpae in third-party lib.
