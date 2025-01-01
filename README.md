@@ -10,9 +10,9 @@
 - for Chinese, vstudio默认gb2312编码, vs code默认utf8编码, 大部分含中文注释文件已经转换为utf8编码
 
 ## TRCA.dll
-- For source code, refer to[dll.cpp](./dll.cpp).
+- For source code, refer to [dll.cpp](./dll.cpp).
   
-- For python call, refer to[dllValid.py](./dllValid.py), and [onlineValid.py](./onlineValid.py)
+- For python call, refer to [dllValid.py](./dllValid.py), and [onlineValid.py](./onlineValid.py)
 
 ### FilterBank
 - Implementation of notch, FilterBank (10 banks,  6-th order bandpass at most: [{6, 14, 22, 30, 38, 46, 54, 62, 70, 78}, 90]), detrend, normalization.
